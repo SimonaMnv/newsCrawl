@@ -7,6 +7,15 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".."))
+os.environ['DJANGO_SETTINGS_MODULE'] = 'newsCrawl.settings'
+import django
+django.setup()
+
+DOWNLOAD_DELAY = 3
+
 BOT_NAME = 'crawling'
 
 SPIDER_MODULES = ['crawling.spiders']
