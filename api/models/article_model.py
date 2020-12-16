@@ -8,3 +8,6 @@ class ArticleOfInterest(models.Model):
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        db_table = 'db_article'

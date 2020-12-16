@@ -12,4 +12,4 @@ class CrimeOfInterest(models.Model):
         return self.type
 
     class Meta:
-        db_table = 'api_crime'
+        db_table = 'db_crime'

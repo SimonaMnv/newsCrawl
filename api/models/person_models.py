@@ -10,7 +10,7 @@ class PersonOfInterest(models.Model):
         return self.name
 
     class Meta:
-        db_table = 'api_person'
+        db_table = 'db_person'
 
 
 class Criminal(PersonOfInterest):
@@ -19,7 +19,7 @@ class Criminal(PersonOfInterest):
         self.type = "criminal"
 
     class Meta:
-        db_table = 'api_criminal'
+        db_table = 'db_criminal'
 
 
 class Victim(PersonOfInterest):
@@ -28,7 +28,7 @@ class Victim(PersonOfInterest):
         self.type = "victim"
 
     class Meta:
-        db_table = 'api_victim'
+        db_table = 'db_victim'
 
 # python manage.py makemigrations API  -> track changes
 # python manage.py sqlmigrate API XXXX
