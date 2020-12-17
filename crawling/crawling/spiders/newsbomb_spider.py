@@ -1,6 +1,4 @@
 import scrapy
-# from crawling.crawling.items import ArticleItem
-from scrapy.spiders import CrawlSpider
 
 
 class NewsbombSpider(scrapy.Spider):
@@ -16,18 +14,21 @@ class NewsbombSpider(scrapy.Spider):
         for link in article_links:
             url = 'https://www.newsbomb.gr' + link.get()
             yield scrapy.Request(url=url, callback=self.parse_article)
-        if next_page:
-            yield scrapy.Request(response.urljoin(next_page), callback=self.parse)
+        # if next_page:
+        #     yield scrapy.Request(response.urljoin(next_page), callback=self.parse)
 
     def parse_article(self, response):
         title = response.css('h1::text').get()
+        tags = response.xpath("//meta[@name='keywords']/@content")[0].extract()
+        date = response.css('script::text').re(r'datePublished":"(.*?)T')
+        body = response.css('script::text').re(r'articleBody":"(.*)')
 
         yield {
-            'Title': title
+            'Title': title,
+            'Date': date,
+            'Tags': tags,
+            'Body': body
         }
 
 # 1. to scrape: go in crawling>crawling: scrapy crawl newsbomb
 # 2. to check the html manually before parsing: scrapy shell > fetch(site) > print(response.text)
-
-# headline, date, body = response.xpath("//script[contains(., 'articleBody')]/text()").extract()
-# tags = response.xpath("//meta[@name='keywords']/@content")[0].extract()
