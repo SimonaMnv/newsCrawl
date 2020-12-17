@@ -1,5 +1,6 @@
 from crawling.items import ArticleItem
 import scrapy
+import json
 
 
 class NewsbombSpider(scrapy.Spider):
@@ -19,12 +20,15 @@ class NewsbombSpider(scrapy.Spider):
         #     yield scrapy.Request(response.urljoin(next_page), callback=self.parse)
 
     def parse_article(self, response):
+        data = json.loads(response.xpath('//script[@type="application/ld+json"]//text()').extract_first())
         article = ArticleItem()
-        article['title'] = response.css('h1::text').get()
-        article['date'] = response.css('script::text').re(r'datePublished":"(.*?)T')
-        article['body'] = response.css('script::text').re(r'articleBody":"(.*)')
-        article['tags'] = response.xpath("//meta[@name='keywords']/@content")[0].extract()
-        article['link'] = response.css('script::text').re(r'@id":"(.*)headline')
+
+        article['title'] = data["@graph"][0]["headline"]
+        article['date'] = data["@graph"][0]["datePublished"]
+        article['body'] = data["@graph"][0]["articleBody"]
+        article['tags'] = data["@graph"][0]["keywords"]
+        article['author'] = data["@graph"][0]["author"]['name']
+        article['link'] = data["@graph"][0]["mainEntityOfPage"]["@id"]
         yield article
 
 

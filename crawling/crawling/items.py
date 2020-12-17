@@ -11,4 +11,5 @@ class ArticleItem(scrapy.Item):
     date = scrapy.Field()
     body = scrapy.Field()
     tags = scrapy.Field()
+    author = scrapy.Field()
     link = scrapy.Field()
