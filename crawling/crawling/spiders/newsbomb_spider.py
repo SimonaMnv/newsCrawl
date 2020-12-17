@@ -1,3 +1,5 @@
+from pprint import pprint
+
 import scrapy
 
 
@@ -22,12 +24,14 @@ class NewsbombSpider(scrapy.Spider):
         tags = response.xpath("//meta[@name='keywords']/@content")[0].extract()
         date = response.css('script::text').re(r'datePublished":"(.*?)T')
         body = response.css('script::text').re(r'articleBody":"(.*)')
+        link = response.css('script::text').re(r'@id":"(.*)headline')
 
         yield {
             'Title': title,
             'Date': date,
             'Tags': tags,
-            'Body': body
+            'Body': body,
+            'Link': link
         }
 
 # 1. to scrape: go in crawling>crawling: scrapy crawl newsbomb
