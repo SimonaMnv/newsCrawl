@@ -4,13 +4,11 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import scrapy
-from scrapy_djangoitem import DjangoItem
-from api.models.article_model import ArticleOfInterest
 
 
-class ArticleItem(DjangoItem):
-    django_model = ArticleOfInterest
+class ArticleItem(scrapy.Item):
     title = scrapy.Field()
     date = scrapy.Field()
     body = scrapy.Field()
     tags = scrapy.Field()
+    link = scrapy.Field()
