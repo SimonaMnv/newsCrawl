@@ -1,13 +1,14 @@
-from django.db import models
+from djongo import models
 
 
 class PersonOfInterest(models.Model):
-    name = models.CharField(max_length=4096, null=True, unique=False)
+    type = models.CharField(max_length=255, null=True, unique=False)
     age = models.IntegerField(null=True, blank=True)
-    gender = models.CharField(max_length=4096, null=True, unique=True)
+    gender = models.CharField(max_length=255, null=True, unique=False)
+    ethnicity = models.CharField(max_length=255, null=True, unique=False)
 
     def __str__(self):
-        return self.name
+        return self.type
 
     class Meta:
         db_table = 'db_person'
@@ -30,8 +31,9 @@ class Victim(PersonOfInterest):
     class Meta:
         db_table = 'db_victim'
 
-# python manage.py makemigrations API  -> track changes
-# python manage.py sqlmigrate API XXXX
+# python manage.py makemigrations api  -> track changes
+# python manage.py sqlmigrate api XXXX
 # python manage.py migrate
 
 # if db is deleted -> python manage.py createsuperuser
+
