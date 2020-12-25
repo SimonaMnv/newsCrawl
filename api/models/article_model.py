@@ -2,6 +2,7 @@ from djongo import models
 
 
 class ArticleOfInterest(models.Model):
+    _id = models.ObjectIdField()
     title = models.TextField(null=False, blank=False)
     date = models.DateTimeField(null=False, blank=False)
     body = models.TextField(null=False, blank=False)
