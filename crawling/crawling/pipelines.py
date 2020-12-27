@@ -14,7 +14,7 @@ class DjangoPipeline(object):
 
         hashed_id = hashlib.md5(item["link"].encode()).hexdigest()
 
-        article = ArticleOfInterest(_id=ObjectId(hashed_id[:24]), title=item["title"], date=item["date"],
+        article = ArticleOfInterest(_id=str(ObjectId(hashed_id[:24])), title=item["title"], date=item["date"],
                                     body=min(recycled_body[0], key=len), tags=item["tags"], author=item["author"],
                                     link=item["link"])
         article.save()
