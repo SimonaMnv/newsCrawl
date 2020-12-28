@@ -18,7 +18,7 @@ article_index.settings(
 @registry.register_document
 @article_index.document
 class ArticleDocument(DocType):
-    id = fields.IntegerField(attr='_id')
+    id = fields.TextField(attr='_id')
 
     title = fields.TextField(
         attr='title',
