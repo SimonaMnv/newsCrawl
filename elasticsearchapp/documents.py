@@ -1,9 +1,9 @@
 from django_elasticsearch_dsl import Index, fields
-from django_elasticsearch_dsl.documents import DocType
-from elasticsearch_dsl import analyzer
+from django_elasticsearch_dsl.documents import DocType, Document
 from api.models.article_model import ArticleOfInterest
 from elasticsearch_dsl.connections import connections
 from django_elasticsearch_dsl.registries import registry
+from elasticsearchapp.custom_analyzers import greek_analyzer
 
 connections.create_connection()
 
@@ -17,44 +17,15 @@ article_index.settings(
 
 @registry.register_document
 @article_index.document
-class ArticleDocument(DocType):
-    id = fields.TextField(attr='_id')
-
+class ArticleDocument(Document):
     title = fields.TextField(
-        attr='title',
-        fields={
-            'suggest': fields.Completion(),
-        }
+        fields={'raw': fields.TextField(analyzer=greek_analyzer)}
     )
     date = fields.DateField()
-
-    body = fields.TextField(
-        attr='body',
-        fields={
-            'suggest': fields.Completion(),
-        }
-    )
-
-    tags = fields.TextField(
-        attr='tags',
-        fields={
-            'suggest': fields.Completion(),
-        }
-    )
-
-    author = fields.TextField(
-        attr='author',
-        fields={
-            'suggest': fields.Completion(),
-        }
-    )
-
-    link = fields.TextField(
-        attr='link',
-        fields={
-            'suggest': fields.Completion(),
-        }
-    )
+    body = fields.TextField(analyzer=greek_analyzer)
+    tags = fields.TextField(analyzer=greek_analyzer)
+    author = fields.TextField()
+    link = fields.TextField()
 
     class Django:
         model = ArticleOfInterest
