@@ -1,5 +1,5 @@
 from django_elasticsearch_dsl import Index, fields
-from django_elasticsearch_dsl.documents import DocType, Document
+from django_elasticsearch_dsl.documents import Document
 from api.models.article_model import ArticleOfInterest
 from elasticsearch_dsl.connections import connections
 from django_elasticsearch_dsl.registries import registry
@@ -18,9 +18,7 @@ article_index.settings(
 @registry.register_document
 @article_index.document
 class ArticleDocument(Document):
-    title = fields.TextField(
-        fields={'raw': fields.TextField(analyzer=greek_analyzer)}
-    )
+    title = fields.TextField(analyzer=greek_analyzer)
     date = fields.DateField()
     body = fields.TextField(analyzer=greek_analyzer)
     tags = fields.TextField(analyzer=greek_analyzer)
