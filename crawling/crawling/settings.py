@@ -9,9 +9,11 @@
 
 import os
 import sys
+import django
+
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".."))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'newsCrawl.settings'
-import django
+
 django.setup()
 
 DOWNLOAD_DELAY = 3
@@ -21,6 +23,9 @@ BOT_NAME = 'crawling'
 SPIDER_MODULES = ['crawling.spiders']
 NEWSPIDER_MODULE = 'crawling.spiders'
 
+ITEM_PIPELINES = {
+    'crawling.pipelines.DjangoPipeline': 300,
+}
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'crawling (+http://www.yourdomain.com)'
@@ -71,9 +76,6 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-ITEM_PIPELINES = {
-    'crawling.pipelines.DjangoPipeline': 300,
-}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
