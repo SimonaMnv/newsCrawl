@@ -7,7 +7,6 @@ class ArticleDocumentSerializer(DocumentSerializer):
         document = ArticleDocument
 
         fields = (
-            '_id',
             'title',
             'date',
             'body',
