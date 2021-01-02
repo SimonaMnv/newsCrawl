@@ -10,14 +10,17 @@ class NewsbombSpider(scrapy.Spider):
 
     def parse(self, response):
         article_links = response.css('a.overlay-link ::attr(href)')
-        next_page = "https://newsbomb.gr/ellada/astynomiko-reportaz?page=" + str(
-            int(response.css("span.nav-number::text").get()) + 1)
 
         for link in article_links:
             url = 'https://www.newsbomb.gr' + link.get()
+            print("URL", url)
             yield scrapy.Request(url=url, callback=self.parse_article)
-        # if next_page:
-        #     yield scrapy.Request(response.urljoin(next_page), callback=self.parse)
+
+        next_page = "https://newsbomb.gr/ellada/astynomiko-reportaz?page=" + str(
+            int(response.css("span.nav-page span.nav-number::text").get()) + 1)
+        if next_page:
+            print("turned to page", next_page)
+            yield scrapy.Request(response.urljoin(next_page), callback=self.parse)
 
     def parse_article(self, response):
         data = json.loads(response.xpath('//script[@type="application/ld+json"]//text()').extract_first())
@@ -30,7 +33,6 @@ class NewsbombSpider(scrapy.Spider):
         article['author'] = data["@graph"][0]["author"]['name']
         article['link'] = data["@graph"][0]["mainEntityOfPage"]["@id"]
         yield article
-
 
 # 1. to scrape: go in crawling>crawling: scrapy crawl newsbomb
 # 2. to check the html manually before parsing: scrapy shell > fetch(site) > print(response.text)
