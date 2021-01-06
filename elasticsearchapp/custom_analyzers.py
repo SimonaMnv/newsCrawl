@@ -23,7 +23,7 @@ greek_analyzer = analysis.analyzer("greek_analyzer",
                                    filter=[
                                        analysis.token_filter("greek_lowercase", type="lowercase", language="greek"),
                                        analysis.token_filter('greek_stop', type="stop", stopwords="_greek_"),
-                                       # analysis.token_filter('greek_stemmer', type="stemmer", language="greek"),
+                                       analysis.token_filter('greek_stemmer', type="stemmer", language="greek"),
                                        analysis.token_filter('spacy_sw', type="stop", stopwords=remove_accent(spacy_sw))
                                    ],
                                    )
