@@ -1,6 +1,7 @@
 from crawling.items import ArticleItem
 import scrapy
 import json
+import re
 
 
 def check_type(keywords):
@@ -35,11 +36,6 @@ class NewsbombSpider(scrapy.Spider):
                   'https://www.newsbomb.gr/tag/apagwgh', 'https://www.newsbomb.gr/tag/sexoyalika-egklhmata',
                   'https://www.newsbomb.gr/tag/paidofiloi']
 
-    # dupe link protection
-    custom_settings = {
-        'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter',
-    }
-
     def parse(self, response):
         article_links = response.css('a.overlay-link ::attr(href)')
 
@@ -48,7 +44,8 @@ class NewsbombSpider(scrapy.Spider):
             print("URL", url)
             yield scrapy.Request(url=url, callback=self.parse_article)
 
-        next_page = str(response.url) + "?page=" + str(
+        original_url = re.findall(r'[^?]*', str(response.url))
+        next_page = str(original_url[0]) + "?page=" + str(
             int(response.css("span.nav-page span.nav-number::text").get()) + 1)
         if next_page:
             print("turned to page", next_page)
