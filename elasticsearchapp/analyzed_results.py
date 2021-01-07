@@ -1,16 +1,95 @@
 import requests
 
 
-article_id = "0c9795811a0c5e0127e542c3"
-body_url = "http://127.0.0.1:9200/articles/_doc/" + article_id + "/_termvectors?fields=body"
+def get_all_ids():
+    body_url = "http://127.0.0.1:9200/articles/_search?size=10000"
 
-payload = {}
-headers = {}
+    all_ids = []
+    payload = {}
+    headers = {}
 
-response = requests.request("GET", body_url, headers=headers, data=payload)
-response = response.json()
+    response = requests.request("GET", body_url, headers=headers, data=payload)
+    response = response.json()
 
-tokenized_body = response["term_vectors"]["body"]["terms"]
+    length = response["hits"]["total"]["value"]
 
-for token in tokenized_body:
-    print(token)
+    for i in range(0, 50):
+        all_ids.append(response["hits"]["hits"][i]["_id"])
+
+    return all_ids
+
+
+def analyzed_results_body():
+    all_ids = get_all_ids()
+    tokenized_body_results = []
+    final_body = []
+
+    for article_id in all_ids:
+        body_url = "http://127.0.0.1:9200/articles/_doc/" + str(article_id) + "/_termvectors?fields=body"
+
+        payload = {}
+        headers = {}
+
+        response = requests.request("GET", body_url, headers=headers, data=payload)
+        response = response.json()
+
+        if len(response["term_vectors"]) > 0:
+            tokenized_body = response["term_vectors"]["body"]["terms"]
+        else:
+            tokenized_body = ""
+
+        [tokenized_body_results.append(token) for token in tokenized_body]
+        final_body.append(tokenized_body_results)
+        tokenized_body_results = []
+
+    return final_body
+
+
+def analyzed_results_title():
+    all_ids = get_all_ids()
+    tokenized_title_results = []
+    final_title = []
+
+    for article_id in all_ids:
+        body_url = "http://127.0.0.1:9200/articles/_doc/" + str(article_id) + "/_termvectors?fields=title"
+
+        payload = {}
+        headers = {}
+
+        response = requests.request("GET", body_url, headers=headers, data=payload)
+        response = response.json()
+
+        tokenized_title = response["term_vectors"]["title"]["terms"]
+
+        [tokenized_title_results.append(token) for token in tokenized_title]
+        final_title.append(tokenized_title_results)
+        tokenized_title_results = []
+
+    return final_title
+
+
+def analyzed_results_tags():
+    all_ids = get_all_ids()
+    tokenized_tags_results = []
+    final_tags = []
+
+    for article_id in all_ids:
+        body_url = "http://127.0.0.1:9200/articles/_doc/" + str(article_id) + "/_termvectors?fields=tags"
+
+        payload = {}
+        headers = {}
+
+        response = requests.request("GET", body_url, headers=headers, data=payload)
+        response = response.json()
+
+        if len(response["term_vectors"]) > 0:
+            tokenized_tags = response["term_vectors"]["tags"]["terms"]
+        else:
+            tokenized_tags = ""
+
+        [tokenized_tags_results.append(token) for token in tokenized_tags]
+        final_tags.append(tokenized_tags_results)
+        tokenized_tags_results = []
+
+    return final_tags
+

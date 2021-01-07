@@ -13,4 +13,6 @@ class ArticleDocumentSerializer(DocumentSerializer):
             'tags',
             'author',
             'link',
+            'type',
+            'scope',
         )

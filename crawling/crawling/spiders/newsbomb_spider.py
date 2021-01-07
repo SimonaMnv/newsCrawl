@@ -3,12 +3,47 @@ import scrapy
 import json
 
 
+def check_type(keywords):
+    if "ΝΑΡΚΩΤ" in keywords:
+        return "ΝΑΡΚΩΤΙΚΑ"
+    elif "ΔΟΛΟΦΟΝ" in keywords:
+        return "ΔΟΛΟΦΟΝΙΑ"
+    elif "ΛΗΣΤ" in keywords or "ΚΛΟΠ" in keywords:
+        return "ΛΗΣΤΕΙΑ/ΚΛΟΠΗ"
+    elif "ΒΙΑΣ" in keywords or "ΠΑΙΔΕΡΑ" in keywords or "ΠΑΙΔΟΦΙΛ" in keywords or "ΣΕΞΟΥΑΛΙΚ" in keywords:
+        return "ΣΕΞΟΥΑΛΙΚΟ ΕΓΚΛΗΜΑ"
+    elif "ΤΡΟΜΟΚΡΑΤ" in keywords:
+        return "ΤΡΟΜΟΚΡΑΤΙΚΗ ΕΠΙΘΕΣΗ"
+    else:
+        return "ΑΛΛΟ ΕΓΚΛΗΜΑ"
+
+
+def check_scope(keywords):
+    if 'ΕΛΛΑΔΑ' in keywords:
+        return "ΕΛΛΑΔΑ"
+    else:
+        return "ΚΟΣΜΟΣ"
+
+
 class NewsbombSpider(scrapy.Spider):
     name = 'newsbomb'
     allowed_domains = ['newsbomb.gr']
-    start_urls = ['https://www.newsbomb.gr/ellada/astynomiko-reportaz']
+    start_urls = ['https://www.newsbomb.gr/ellada/astynomiko-reportaz', 'https://www.newsbomb.gr/tag/dolofonia',
+                  'https://www.newsbomb.gr/tag/lhsteia', 'https://www.newsbomb.gr/tag/kloph',
+                  'https://www.newsbomb.gr/tag/viasmos', 'https://www.newsbomb.gr/tag/narkwtika',
+                  'https://www.newsbomb.gr/tag/paiderastia', 'https://www.newsbomb.gr/tag/tromokratikh-epithesh',
+                  'https://www.newsbomb.gr/tag/apagwgh', 'https://www.newsbomb.gr/tag/sexoyalika-egklhmata',
+                  'https://www.newsbomb.gr/tag/paidofiloi']
+
+    # dupe link protection
+    custom_settings = {
+        'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter',
+    }
 
     def parse(self, response):
+        spiderman = NewsbombSpider()
+        start_url = spiderman.start_urls
+
         article_links = response.css('a.overlay-link ::attr(href)')
 
         for link in article_links:
@@ -16,7 +51,7 @@ class NewsbombSpider(scrapy.Spider):
             print("URL", url)
             yield scrapy.Request(url=url, callback=self.parse_article)
 
-        next_page = "https://newsbomb.gr/ellada/astynomiko-reportaz?page=" + str(
+        next_page = str(start_url) + "?page=" + str(
             int(response.css("span.nav-page span.nav-number::text").get()) + 1)
         if next_page:
             print("turned to page", next_page)
@@ -32,6 +67,9 @@ class NewsbombSpider(scrapy.Spider):
         article['tags'] = data["@graph"][0]["keywords"]
         article['author'] = data["@graph"][0]["author"]['name']
         article['link'] = data["@graph"][0]["mainEntityOfPage"]["@id"]
+        article['type'] = check_type(article['tags'])
+        article['scope'] = check_scope(article['tags'])
+
         yield article
 
 # 1. to scrape: go in crawling>crawling: scrapy crawl newsbomb

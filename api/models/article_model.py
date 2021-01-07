@@ -9,6 +9,8 @@ class ArticleOfInterest(models.Model):
     tags = models.TextField(null=True, blank=True)
     author = models.CharField(max_length=255, unique=False)
     link = models.TextField(null=True, blank=True)
+    type = models.TextField(null=True, blank=True)
+    scope = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.title

@@ -23,6 +23,6 @@ class DjangoPipeline(object):
 
         article = ArticleOfInterest(_id=str(ObjectId(hashed_id[:24])), title=item["title"], date=item["date"],
                                     body=min(final_body, key=len), tags=item["tags"], author=item["author"],
-                                    link=item["link"])
+                                    link=item["link"], type=item["type"], scope=item["scope"])
         article.save()
         return item
