@@ -45,12 +45,12 @@ class NewsbombSpider(scrapy.Spider):
         start_urls = spiderman.start_urls
         article_links = response.css('a.overlay-link ::attr(href)')
 
-        for url in start_urls:
-            for link in article_links:
-                url = 'https://www.newsbomb.gr' + link.get()
-                print("URL", url)
-                yield scrapy.Request(url=url, callback=self.parse_article)
+        for link in article_links:
+            url = 'https://www.newsbomb.gr' + link.get()
+            print("URL", url)
+            yield scrapy.Request(url=url, callback=self.parse_article)
 
+        for url in start_urls:
             next_page = str(url) + "?page=" + str(
                 int(response.css("span.nav-page span.nav-number::text").get()) + 1)
             if next_page:
