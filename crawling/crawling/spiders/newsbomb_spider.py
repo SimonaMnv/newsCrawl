@@ -43,10 +43,9 @@ class NewsbombSpider(scrapy.Spider):
     def parse(self, response):
         spiderman = NewsbombSpider()
         start_urls = spiderman.start_urls
+        article_links = response.css('a.overlay-link ::attr(href)')
 
         for url in start_urls:
-            article_links = response.css('a.overlay-link ::attr(href)')
-
             for link in article_links:
                 url = 'https://www.newsbomb.gr' + link.get()
                 print("URL", url)
