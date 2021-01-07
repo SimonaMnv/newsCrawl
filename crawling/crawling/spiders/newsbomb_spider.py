@@ -41,8 +41,6 @@ class NewsbombSpider(scrapy.Spider):
     }
 
     def parse(self, response):
-        spiderman = NewsbombSpider()
-        start_urls = spiderman.start_urls
         article_links = response.css('a.overlay-link ::attr(href)')
 
         for link in article_links:
@@ -50,12 +48,11 @@ class NewsbombSpider(scrapy.Spider):
             print("URL", url)
             yield scrapy.Request(url=url, callback=self.parse_article)
 
-        for url in start_urls:
-            next_page = str(url) + "?page=" + str(
-                int(response.css("span.nav-page span.nav-number::text").get()) + 1)
-            if next_page:
-                print("turned to page", next_page)
-                yield scrapy.Request(response.urljoin(next_page), callback=self.parse)
+        next_page = str(url) + "?page=" + str(
+            int(response.css("span.nav-page span.nav-number::text").get()) + 1)
+        if next_page:
+            print("turned to page", next_page)
+            yield scrapy.Request(response.urljoin(next_page), callback=self.parse)
 
     def parse_article(self, response):
         data = json.loads(response.xpath('//script[@type="application/ld+json"]//text()').extract_first())
