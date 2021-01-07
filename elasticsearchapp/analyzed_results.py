@@ -1,5 +1,6 @@
 import requests
 
+
 article_id = "0c9795811a0c5e0127e542c3"
 body_url = "http://127.0.0.1:9200/articles/_doc/" + article_id + "/_termvectors?fields=body"
 
