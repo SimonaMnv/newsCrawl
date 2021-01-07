@@ -48,7 +48,7 @@ class NewsbombSpider(scrapy.Spider):
             print("URL", url)
             yield scrapy.Request(url=url, callback=self.parse_article)
 
-        next_page = str(url) + "?page=" + str(
+        next_page = str(response.url) + "?page=" + str(
             int(response.css("span.nav-page span.nav-number::text").get()) + 1)
         if next_page:
             print("turned to page", next_page)
