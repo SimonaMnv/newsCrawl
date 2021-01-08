@@ -16,7 +16,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'newsCrawl.settings'
 
 django.setup()
 
-DOWNLOAD_DELAY = 3
+DOWNLOAD_DELAY = 2
 
 BOT_NAME = 'crawling'
 

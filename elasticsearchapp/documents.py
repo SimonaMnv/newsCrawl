@@ -24,6 +24,8 @@ class ArticleDocument(Document):
     tags = fields.TextField(analyzer=greek_analyzer)
     author = fields.TextField()
     link = fields.TextField()
+    type = fields.TextField()
+    scope = fields.TextField()
 
     class Django:
         model = ArticleOfInterest
