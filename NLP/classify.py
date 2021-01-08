@@ -42,6 +42,10 @@ Encoder = LabelEncoder()
 train_Y = Encoder.fit_transform(train_Y)
 test_Y = Encoder.fit_transform(test_Y)
 
+# check the given classe id
+integer_mapping = {l: i for i, l in enumerate(Encoder.classes_)}
+print(integer_mapping)
+
 Tfidf_vect = TfidfVectorizer(max_features=5000)
 Tfidf_vect.fit(corpus['article_tokens'])
 Train_X_Tfidf = Tfidf_vect.transform(train_X)
@@ -56,8 +60,16 @@ Naive.fit(Train_X_Tfidf, train_Y)
 predictions_NB = Naive.predict(Test_X_Tfidf)
 print("Naive Bayes Accuracy Score: ", accuracy_score(predictions_NB, test_Y)*100)
 
-# SVM Classifier
+# # SVM Classifier
 SVM = svm.SVC(C=1.0, kernel='linear', degree=3, gamma='auto')
 SVM.fit(Train_X_Tfidf, train_Y)
 predictions_SVM = SVM.predict(Test_X_Tfidf)
 print("SVM Accuracy Score: ", accuracy_score(predictions_SVM, test_Y)*100)
+
+# test unknown dataset -> not in db
+no_label_corpus = pd.read_csv('../dfs/newsbomb_article_predict.csv')
+test_unknown = no_label_corpus['article_tokens']
+
+test_unknown_Tfidf = Tfidf_vect.transform(test_unknown)
+predictions_SVM = SVM.predict(test_unknown_Tfidf)
+print(predictions_SVM)
