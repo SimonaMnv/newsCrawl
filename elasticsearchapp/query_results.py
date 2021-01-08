@@ -13,7 +13,7 @@ def get_all_ids():
 
     length = response["hits"]["total"]["value"]
 
-    for i in range(0, 50):
+    for i in range(0, length):
         all_ids.append(response["hits"]["hits"][i]["_id"])
 
     return all_ids
@@ -93,3 +93,34 @@ def analyzed_results_tags():
 
     return final_tags
 
+
+def get_categories(type):
+    import requests
+    murder = []
+    drugs = []
+    theft = []
+    sex_crime = []
+    terrorism = []
+    other_crime = []
+
+    url = "http://127.0.0.1:9200/articles/_search"
+
+    if type == "murder":
+        payload = "{\r\n  \"size\": 10000,\r\n  \"query\": {\r\n    \"term\": {\r\n      \"type\": {\r\n        " \
+                  "\"value\": \"δολοφονια\"\r\n      }\r\n    }\r\n  }, \r\n  \"aggregations\": {\r\n    \"NAME\": {" \
+                  "\r\n  " \
+                  "    \"significant_text\": {\r\n        \"field\": \"type\"\r\n      }\r\n    }\r\n  }\r\n} "
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+    response = requests.request("GET", url, headers=headers, data=payload.encode('utf8'))
+    response = response.json()
+    length = response["hits"]["total"]["value"]
+
+    for i in range(0, length):
+        murder.append(response["hits"]["hits"][i]["_source"]["title"])
+
+    return murder
+
+print(get_categories("murder"))

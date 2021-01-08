@@ -1,6 +1,6 @@
 import json
 import numpy as np
-from elasticsearchapp.analyzed_results import analyzed_results_body, analyzed_results_title, analyzed_results_tags
+from elasticsearchapp.query_results import analyzed_results_body, analyzed_results_title, analyzed_results_tags
 
 np.random.seed(500)
 
