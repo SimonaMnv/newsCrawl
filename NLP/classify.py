@@ -3,7 +3,7 @@ from elasticsearchapp.query_results import analyzed_results_body, analyzed_resul
 
 def create_ds():
     ds = []
-    
+
     bodies = analyzed_results_body()
     print(bodies)
 
