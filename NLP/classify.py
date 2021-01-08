@@ -1,16 +1,21 @@
-from elasticsearchapp.query_results import analyzed_results_body, analyzed_results_title, analyzed_results_tags
+from elasticsearchapp.query_results import get_all_analyzed_data
+import pandas as pd
+
+tokenized_data, raw_type = get_all_analyzed_data()
 
 
-def create_ds():
-    ds = []
+def export_dataset_df():
+    total_data = []
+    total_types = []
 
-    bodies = analyzed_results_body()
-    print(bodies)
+    for data, type in zip(tokenized_data, raw_type):
+        total_data.append(data)
+        total_types.append(type)
 
-    titles = analyzed_results_title()
-    print(titles)
+    print(total_data)
+    print(total_types)
 
-    tags = analyzed_results_tags()
-    print(tags)
+    df = pd.DataFrame({'article_tokens': total_data, 'crime_type': total_types})
+    df.to_csv('../dfs/newsbomb_article.csv', encoding='utf-8-sig', index=False)
 
-    return ds
+export_dataset_df()
