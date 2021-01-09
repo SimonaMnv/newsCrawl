@@ -1,4 +1,5 @@
 from djongo import models
+# from article_analysis import CrimeAnalysis
 
 
 class ArticleOfInterest(models.Model):
@@ -11,6 +12,7 @@ class ArticleOfInterest(models.Model):
     link = models.TextField(null=True, blank=True)
     type = models.TextField(null=True, blank=True)
     scope = models.TextField(null=True, blank=True)
+    # crime_analysis = models.ForeignKey(CrimeAnalysis, on_delete=models.PROTECT)
 
     def __str__(self):
         return self.title
