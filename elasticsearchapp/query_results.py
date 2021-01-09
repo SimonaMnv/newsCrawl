@@ -122,5 +122,3 @@ def get_categories(type):
         murder.append(response["hits"]["hits"][i]["_source"]["title"])
 
     return murder
-
-print(get_categories("murder"))

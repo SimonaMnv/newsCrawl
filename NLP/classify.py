@@ -14,3 +14,5 @@ def create_ds():
     print(tags)
 
     return ds
+
+create_ds()
