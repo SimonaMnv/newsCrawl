@@ -1,31 +1,32 @@
 from djongo import models
 
 
-class PersonOfInterest(models.Model):
-    type = models.CharField(max_length=255, null=True, unique=False)
+class CrimeAnalysis(models.Model):
+    location_of_crime = models.CharField(max_length=255, null=True, unique=False)
     age = models.IntegerField(null=True, blank=True)
     gender = models.CharField(max_length=255, null=True, unique=False)
     ethnicity = models.CharField(max_length=255, null=True, unique=False)
+    severity_index = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
-        return self.type
+        return self.location_of_crime
 
     class Meta:
         db_table = 'db_person'
 
 
-class Criminal(PersonOfInterest):
+class Criminal(CrimeAnalysis):
     def __init__(self, *args, **kwargs):
-        super(PersonOfInterest, self).__init__(*args, **kwargs)
+        super(CrimeAnalysis, self).__init__(*args, **kwargs)
         self.type = "criminal"
 
     class Meta:
         db_table = 'db_criminal'
 
 
-class Victim(PersonOfInterest):
+class Victim(CrimeAnalysis):
     def __init__(self, *args, **kwargs):
-        super(PersonOfInterest, self).__init__(*args, **kwargs)
+        super(CrimeAnalysis, self).__init__(*args, **kwargs)
         self.type = "victim"
 
     class Meta:
