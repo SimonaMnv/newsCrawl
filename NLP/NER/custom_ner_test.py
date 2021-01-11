@@ -90,7 +90,7 @@ specific_text2 = "Η ομάδα δακτυλοσκόπησης της Διεύθ
 
 # test the saved model
 nlp2 = spacy.load('custom_model/')
-doc = nlp(specific_text2)
+doc = nlp(specific_text)
 
 print(spacy.displacy.serve(doc, style='ent'))
 

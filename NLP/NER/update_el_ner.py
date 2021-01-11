@@ -11,11 +11,9 @@ ner = nlp.get_pipe("ner")
 # training data
 from ner_train_data import TRAIN_DATA
 
-LABEL = 'ΕΘΝΙΚΟΤΗΤΑ'
-
 
 # spacy Training an additional entity type to existing el model
-def main(model=None, new_model_name="animal", output_dir=None, n_iter=30):
+def main(model=None, new_model_name="crime-analysis", n_iter=30):
     random.seed(0)
     if model is not None:
         nlp = spacy.load(model)  # load existing spaCy model
@@ -32,8 +30,8 @@ def main(model=None, new_model_name="animal", output_dir=None, n_iter=30):
     else:
         ner = nlp.get_pipe("ner")
 
-    ner.add_label(LABEL)  # add new entity label to entity recognizer
-    # Adding extraneous labels shouldn't mess anything up
+    # add new entity label to entity recognizer
+    ner.add_label("ΕΘΝΙΚΟΤΗΤΑ")
     ner.add_label("ΘΥΤΗΣ")
     ner.add_label("ΘΥΜΑ")
     ner.add_label("ΗΛΙΚΙΑ")

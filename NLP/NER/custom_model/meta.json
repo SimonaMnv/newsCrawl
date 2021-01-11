@@ -1,6 +1,6 @@
 {
   "lang":"el",
-  "name":"animal",
+  "name":"crime-analysis",
   "version":"0.0.0",
   "spacy_version":">=2.3.5",
   "description":"",
