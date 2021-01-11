@@ -2,7 +2,7 @@ import spacy
 
 
 # nlp = spacy.load('el')
-nlp = spacy.load('custom_ner_model')
+nlp = spacy.load('custom_model')
 
 specific_text = "Εμπόριο βρεφών στη Θεσσαλονίκη: Ποιους φακέλους ξεσκονίζει η ΕΛ.ΑΣ. Έρευνα για υποθέσεις που " \
                 "σχετίζονται με εμπόριο βρεφών ξεκίνησε η Ασφάλεια Θεσσαλονίκης, ύστερα από την παραγγελία " \
@@ -88,11 +88,9 @@ specific_text2 = "Η ομάδα δακτυλοσκόπησης της Διεύθ
                  "πρώτη στιγμή, οι αξιωματικοί του ανθρωποκτονιών είχαν επικεντρώσει την έρευνά τους σε γυναίκες " \
                  "ηλικίας 30 έως 40 ετών, που είχε δηλωθεί η εξαφάνισή τους και αναζητούνταν από τους οικείους τους. "
 
-
+# test the saved model
+nlp2 = spacy.load('custom_model/')
 doc = nlp(specific_text2)
-# print("Entities in '%s'" % doc)
-# for ent in doc.ents:
-#     print(ent.label_, ent.text)
 
 print(spacy.displacy.serve(doc, style='ent'))
 
