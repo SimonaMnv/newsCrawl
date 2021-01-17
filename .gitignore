@@ -6,3 +6,4 @@ migrations
 .txt
 .csv
 doccano.db
+cache

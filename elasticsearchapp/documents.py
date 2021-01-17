@@ -4,6 +4,7 @@ from api.models.article_model import ArticleOfInterest
 from elasticsearch_dsl.connections import connections
 from django_elasticsearch_dsl.registries import registry
 from elasticsearchapp.custom_analyzers import greek_analyzer
+from elasticsearchapp.custom_analyzers import greek_simple_analyzer
 
 connections.create_connection()
 
@@ -18,10 +19,19 @@ article_index.settings(
 @registry.register_document
 @article_index.document
 class ArticleDocument(Document):
-    title = fields.TextField(analyzer=greek_analyzer)
+    title = fields.TextField(
+        analyzer=greek_analyzer,   # main analyzer
+        fields={'simple_analyzer': fields.TextField(analyzer=greek_simple_analyzer)}
+    )
     date = fields.DateField()
-    body = fields.TextField(analyzer=greek_analyzer)
-    tags = fields.TextField(analyzer=greek_analyzer)
+    body = fields.TextField(
+        analyzer=greek_analyzer,
+        fields={'simple_analyzer': fields.TextField(analyzer=greek_simple_analyzer)}
+    )
+    tags = fields.TextField(
+        analyzer=greek_analyzer,
+        fields={'simple_analyzer': fields.TextField(analyzer=greek_simple_analyzer)}
+    )
     author = fields.TextField()
     link = fields.TextField()
     type = fields.TextField()
@@ -36,3 +46,4 @@ class ArticleDocument(Document):
 # 2. sync data: python manage.py elasticsearchapp --populate -f
 
 # TODO: python manage.py search_index --rebuild
+# TODO: in kibana change the limits

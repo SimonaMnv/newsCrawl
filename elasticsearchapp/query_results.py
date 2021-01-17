@@ -1,4 +1,49 @@
 import requests
+import re
+
+
+# for dependency analyse
+def gather_raw_verbs(type, threshold):
+    url = "http://127.0.0.1:9200/articles/_search"
+    keyword = []
+
+    payload = "{\r\n  \"size\": 0,\r\n  \"query\": {\r\n    \"term\": {\r\n      \"type\": {\r\n        " \
+              "\"value\": \"" + type + "\"\r\n      }\r\n    }\r\n  }, \r\n  \"aggregations\": {\r\n    \"NAME\": {\r\n " \
+              "     \"significant_text\": {\r\n        \"field\": \"body.simple_analyzer\",\r\n      " \
+              "  \"size\":" + str(threshold) + "\r\n      }\r\n    }\r\n  }\r\n}"
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
+    response = response.json()
+
+    for i in range(0, threshold):
+        keyword.append([re.sub("σ$", "ς", response['aggregations']['NAME']['buckets'][i]['key'])])
+
+    return keyword
+
+
+# for dependency analyse
+def get_latest_raw_data():
+    url = "http://127.0.0.1:9200/articles/_search"
+    raw_data = []
+    raw_type = []
+
+    payload = "{\r\n  \"track_total_hits\": true, \r\n  \"size\":1\r\n\r\n}"
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+    response = response.json()
+
+    article_body = response["hits"]["hits"][0]["_source"]["body"] + " " + \
+                   response["hits"]["hits"][0]["_source"]["title"] + " "
+    raw_data.append([article_body])
+    raw_type.append(response["hits"]["hits"][0]["_source"]["type"])
+
+    return raw_data, raw_type
 
 
 def get_all_raw_data():
