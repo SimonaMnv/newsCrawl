@@ -35,9 +35,6 @@ def main(model=None, new_model_name="crime-analysis", n_iter=30):
     ner.add_label("ΠΡΑΞΗ")
     ner.add_label("ΗΛΙΚΙΑ")
     ner.add_label("ΗΜΕΡΟΜΗΝΙΑ")
-    ner.add_label("ΑΤΟΜΟ")
-    ner.add_label("ΚΑΤΑΣΤΑΣΗ ΕΓΚΛΗΜΑΤΟΣ")
-    ner.add_label("ΑΝΤΙΚΕΙΜΕΝΟ ΕΓΚΛΗΜΑΤΟΣ")
     if model is None:
         optimizer = nlp.begin_training()
     else:

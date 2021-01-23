@@ -110,7 +110,7 @@ def get_specific_analyzed(specific_text):
 
     # escape some characters or tokenization wont work
     specific_text = specific_text.replace('\n', '').replace('\r', '').replace("\\", '').replace('"', "")\
-        .replace("\b", '').replace("\t", '').replace("\f", '')
+                    .replace("\b", '').replace("\t", '').replace("\f", '')
 
     payload = "{\r\n  \"analyzer\" : \"greek_analyzer\",\r\n  \"text\" : \"" + specific_text + "\"\r\n}"
     headers = {
