@@ -8,11 +8,11 @@ import nltk
 nlp = spacy.load('el_core_news_lg', disable=['ner', 'textcat'])
 
 
-def important_verb_dict_spacy(type):
+def important_verb_dict_spacy(type, thres):
     # take the important verbs from all articles based on type
     important_verbs = []
 
-    important_terms = gather_raw_verbs(type=type, threshold=30)  # TODO: play with threshold
+    important_terms = gather_raw_verbs(type=type, threshold=thres)
     for term in important_terms:
         doc = nlp(term[0])
         for token in doc:
@@ -22,13 +22,15 @@ def important_verb_dict_spacy(type):
     return important_verbs
 
 
-def dependency_collector(article):
+def dependency_collector(article, to_print=False):
     doc = nlp(article)
     subject = []
     object = []
     verb = []
     gender_subject = []
     gender_object = []
+    action_v2 = []
+    place_v2 = []
 
     for token in doc:
         if len(token) > 4:  # skip and ignore small words, probably junk
@@ -36,41 +38,52 @@ def dependency_collector(article):
             if token.pos_ == 'VERB':
                 verb.append(token.text)
 
-            check = re.findall("Gender=[^|]*", token.tag_)
-            if not check == []:
-                if not check[0] == 'Gender=Neut':
-                    # extract subject
-                    if token.dep_ == 'nsubj' or token.dep_ == 'iobj' or token.dep_ == 'conj':
-                        gender_subject.append(re.findall("Gender=[^|]*", token.tag_))
-                        subject.append(token.text)
-                    # extract object
-                    elif token.dep_ == 'dobj' or token.dep_ == 'obj':
-                        gender_object.append(re.findall("Gender=[^|]*", token.tag_))
-                        object.append(token.text)
+            # if to_print is True:
+            #     print(token.text, '->', token.pos_, token.dep_)
+                # print(token.orth_, token.dep_, token.head.orth_, [t.orth_ for t in token.lefts], [t.orth_ for t in token.rights])
+
+            # check = re.findall("Gender=[^|]*", token.tag_)
+            # if not check == []:
+            #     if not check[0] == 'Gender=Neut':
+            # extract subject
+            if token.dep_ == 'nsubj' or token.dep_ == 'iobj':  # or token.dep_ == 'conj':
+                gender_subject.append(re.findall("Gender=[^|]*", token.tag_))
+                subject.append(token.text)
+            # extract object
+            if token.dep_ == 'dobj' or token.dep_ == 'obj':
+                gender_object.append(re.findall("Gender=[^|]*", token.tag_))
+                object.append(token.text)
+
+            # probably junk, test
+            if token.pos_ == 'VERB' and token.dep_ == 'ROOT':
+                action_v2.append(token.text)
+            if token.pos_ == 'PROPN' and token.dep_ == 'obl':
+                place_v2.append(token.text)
 
     # with open("dependencyLogs/dependency.html", "w") as file:
     #     file.write(displacy.render(doc, style='dep', jupyter=False))
 
-    return verb, subject, object, gender_subject, gender_object
+    return verb, subject, object, gender_subject, gender_object, action_v2, place_v2
 
 
 # get 1 article based on index given for testing
-raw_data, raw_type = get_latest_raw_data(article_index=3)  # raw_data[0][0]
-verb, subject, object, gender_subj, gender_obj = dependency_collector(raw_data[0][0])
+raw_data, raw_type = get_latest_raw_data(article_index=5, article_type='δολοφονια')  # raw_data[0][0]
+verb, subject, object, gender_subj, gender_obj, action_v2, place_v2 = dependency_collector(raw_data[0][0])
 
 # leave space after punctuation -> fix this @crawling stage
-data = raw_data[0][0].replace('!', '! ')
+data = raw_data[0][0].replace('!', '! ').replace(',', '. ').replace(":", '. ')
 print("article:", data)
 
-verbs_dictionary = important_verb_dict_spacy('δολοφονια')  # TODO: change this if article isn't murder
+verbs_dictionary = important_verb_dict_spacy('δολοφονια', 35)  # TODO: change this if article isn't murder, play with threshold
 
 # all the verbs in the article
 article_verbs = []
 for v in verb:
-    article_verbs.append({
-        'raw': v,
-        'analyzed': get_specific_analyzed(v)[0][0]
-    })
+    if len(get_specific_analyzed(v)) > 0:
+        article_verbs.append({
+            'raw': v,
+            'analyzed': get_specific_analyzed(v)[0][0]
+        })
 
 # all the verbs in dictionary from elastic
 elastic_dict_verbs = []
@@ -94,10 +107,15 @@ for verb in set(matched_verbs[0]):
             important_sentences.append(t)
             print("Article sentence:", t, "___", "verb matched:", verb)
 
-# now get the subject and object of each of the important sentences
+# now get the subjects and objects of each of the important sentences
 for sent in important_sentences:
-    verb, subject, object_, gender_subj, gender_obj = dependency_collector(sent)
+    verb, subject, object_, gender_subj, gender_obj, action_v2, place_v2 = dependency_collector(sent, to_print=True)
     if not subject == []:
-        print("ΘΥΤΗΣ:", subject, "ΦΥΛΟ:", gender_subj)
+        print("[1] ΘΥΤΗΣ:", subject, "ΦΥΛΟ:", gender_subj)
     if not object_ == []:
-        print("ΘΥΜΑ:", object_, "ΦΥΛΟ:", gender_obj)
+        print("[1] ΘΥΜΑ:", object_, "ΦΥΛΟ:", gender_obj)
+    if not action_v2 == []:
+        print("ΠΡΑΞΕΙΣ:", action_v2)
+    if not place_v2 == []:
+        print("ΤΟΠΟΣ/ΧΡΟΝΟΣ:", place_v2)
+

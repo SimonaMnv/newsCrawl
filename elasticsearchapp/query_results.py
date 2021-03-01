@@ -9,8 +9,8 @@ def gather_raw_verbs(type, threshold):
 
     payload = "{\r\n  \"size\": 0,\r\n  \"query\": {\r\n    \"term\": {\r\n      \"type\": {\r\n        " \
               "\"value\": \"" + type + "\"\r\n      }\r\n    }\r\n  }, \r\n  \"aggregations\": {\r\n    \"NAME\": {\r\n " \
-              "     \"significant_text\": {\r\n\"field\": \"body.simple_analyzer\",\r\n " \
-              "  \"size\":" + str(threshold) + "\r\n      }\r\n    }\r\n  }\r\n}"
+                                       "     \"significant_text\": {\r\n\"field\": \"body.simple_analyzer\",\r\n " \
+                                       "  \"size\":" + str(threshold) + "\r\n      }\r\n    }\r\n  }\r\n}"
     headers = {
         'Content-Type': 'application/json'
     }
@@ -25,17 +25,20 @@ def gather_raw_verbs(type, threshold):
 
 
 # for dependency analyze testing
-def get_latest_raw_data(article_index=0):
+def get_latest_raw_data(article_index=0, article_type='δολοφονια'):
     url = "http://127.0.0.1:9200/articles/_search"
     raw_data = []
     raw_type = []
 
-    payload = "{\r\n  \"track_total_hits\": true, \r\n  \"size\":1000\r\n\r\n}"
+    payload = "{\r\n  \"track_total_hits\": true, \r\n    \"size\": 1000,\r\n    \"query\": {\r\n        " \
+              "\"term\": {\r\n            \"type\": {\r\n                \"value\": \"" + article_type + "\"\r\n         " \
+                                                                                                         "   }\r\n        }\r\n    }\r\n}"
+
     headers = {
         'Content-Type': 'application/json'
     }
 
-    response = requests.request("GET", url, headers=headers, data=payload)
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
     response = response.json()
 
     article_body = response["hits"]["hits"][article_index]["_source"]["body"] + " " + \
@@ -64,7 +67,7 @@ def get_all_raw_data():
 
     for i in range(0, length):
         article_body = response["hits"]["hits"][i]["_source"]["body"] + " " + \
-                       response["hits"]["hits"][i]["_source"]["title"] + " " +  \
+                       response["hits"]["hits"][i]["_source"]["title"] + " " + \
                        response["hits"]["hits"][i]["_source"]["tags"] + " "
         raw_data.append([article_body])
         raw_type.append(response["hits"]["hits"][i]["_source"]["type"])
@@ -73,7 +76,7 @@ def get_all_raw_data():
 
 
 def get_all_analyzed_data():
-    raw_data, raw_type = get_all_raw_data()     # todo: index analyzed without raw data func
+    raw_data, raw_type = get_all_raw_data()  # todo: index analyzed without raw data func
     tokenized_data = []
     tokenized_total = []
 
@@ -81,7 +84,7 @@ def get_all_analyzed_data():
 
     for raw_datum in raw_data:
         # escape some characters or tokenization wont work
-        raw_datum[0] = raw_datum[0].replace('\n', '').replace('\r', '').replace("\\", '').replace('"', "")\
+        raw_datum[0] = raw_datum[0].replace('\n', '').replace('\r', '').replace("\\", '').replace('"', "") \
             .replace("\b", '').replace("\t", '').replace("\f", '')
 
         payload = "{\r\n  \"analyzer\" : \"greek_analyzer\",\r\n  \"text\" : \"" + raw_datum[0] + "\"\r\n}"
@@ -104,13 +107,12 @@ def get_all_analyzed_data():
 
 def get_specific_analyzed(specific_text):
     tokenized_data = []
-    tokenized_total = []
 
     url = "http://127.0.0.1:9200/articles/_analyze"
 
     # escape some characters or tokenization wont work
-    specific_text = specific_text.replace('\n', '').replace('\r', '').replace("\\", '').replace('"', "")\
-                    .replace("\b", '').replace("\t", '').replace("\f", '')
+    specific_text = specific_text.replace('\n', '').replace('\r', '').replace("\\", '').replace('"', "") \
+        .replace("\b", '').replace("\t", '').replace("\f", '')
 
     payload = "{\r\n  \"analyzer\" : \"greek_analyzer\",\r\n  \"text\" : \"" + specific_text + "\"\r\n}"
     headers = {
@@ -120,13 +122,11 @@ def get_specific_analyzed(specific_text):
     response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
     response = response.json()
 
-    tokenized = response["tokens"]
-    for token in tokenized:
-        tokenized_data.append(token["token"])
+    for token in response["tokens"]:
+        tokenized_data.append([token["token"]])
 
-    tokenized_total.append(tokenized_data)
-
-    return tokenized_total
+    # print([whatever[0] for whatever in tokenized_data if whatever is not []])
+    return tokenized_data
 
 
 # test
@@ -171,7 +171,7 @@ specific_text = "Εμπόριο βρεφών στη Θεσσαλονίκη: Πο
                 "δικηγόρου που δεν βρίσκεται εν ζωή.Το διπλό φονικό αποκαλύφθηκε την παραμονή της Πρωτοχρονιάς στα " \
                 "Τίρανα, όπου οι άτυχες γυναίκες έπεσαν νεκρές από πυρά του 59χρονου, ο οποίος συνελήφθη και " \
                 "απολογούμενος προανακριτικά ισχυρίστηκε ότι το κίνητρο της αποτρόπαιης πράξης ήταν η τυφλή ζήλια. "
-specific_text.replace('\n', '').replace('\r', '').replace("\\", '').replace('"', "")\
-            .replace("\b", '').replace("\t", '').replace("\f", '')
+specific_text.replace('\n', '').replace('\r', '').replace("\\", '').replace('"', "") \
+    .replace("\b", '').replace("\t", '').replace("\f", '')
 
 # print(get_specific_analyzed(specific_text))
