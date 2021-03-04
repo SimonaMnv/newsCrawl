@@ -21,6 +21,8 @@ def gather_raw_verbs(type, threshold):
     for i in range(0, threshold):
         keyword.append([re.sub("σ$", "ς", response['aggregations']['NAME']['buckets'][i]['key'])])
 
+    print("elastic keywords:", keyword)
+
     return keyword
 
 
@@ -125,7 +127,6 @@ def get_specific_analyzed(specific_text):
     for token in response["tokens"]:
         tokenized_data.append([token["token"]])
 
-    # print([whatever[0] for whatever in tokenized_data if whatever is not []])
     return tokenized_data
 
 
