@@ -2,32 +2,14 @@ import spacy
 import regex as re
 from elasticsearchapp.query_results import gather_raw_verbs, get_specific_analyzed, get_latest_raw_data
 import nltk
+from patterns import victim_patterns
 from spacy.matcher import Matcher
 
 # nltk.download('punkt') # only run once
 nlp = spacy.load('el_core_news_lg')
 
 matcher = Matcher(nlp.vocab)
-patterns = [
-    [{"POS": "NOUN"}, {"DEP": "det"}, {"DEP": "nmod"}],
-    [{"POS": "NOUN"}, {"DEP": "det"}, {"POS": "X"}],
-    [{"POS": "NOUN"}, {"POS": "NUM"}, {"POS": "NOUN"}],
-    [{"POS": "NOUN"}, {"POS": "NUM"}, {"POS": "ADJ"}],
-    [{"POS": "NOUN"}, {"DEP": "det"}, {"POS": "ADJ"}, {"POS": "NOUN"}],
-    [{"POS": "NOUN"}, {"DEP": "det"}, {"POS": "ADJ"}],
-    [{"POS": "VERB"}, {"POS": "NUM"}, {"POS": "NOUN"}],
-    [{"POS": "NOUN"}, {"DEP": "det"}, {"POS": "NUM"}, {"POS": "NOUN"}],
-    [{"POS": "VERB"}, {"POS": "CCONJ"}, {"POS": "VERB"}, {"POS": "NUM"}, {"POS": "NOUN"}],
-    [{"POS": "VERB"}, {"POS": "DET"}, {"POS": "NOUN"}, {"POS": "DET"}, {"POS": "X"}],
-    [{"POS": "VERB"}, {"POS": "DET"}, {"POS": "NOUN"}, {"POS": "DET"}, {"POS": "NOUN"}],
-    [{"POS": "DET"}, {"POS": "NOUN"}, {"POS": "DET"}, {"POS": "VERB"}],
-    [{"POS": "DET"}, {"POS": "NOUN"}, {"POS": "PRON"}, {"POS": "VERB"}],
-    [{"POS": "VERB"}, {"POS": "DET"}, {"POS": "ADJ"}, {"POS": "NOUN"}],
-    [{"POS": "VERB"}, {"POS": "DET"}, {"POS": "NOUN"}, {"POS": "PRON"}],
-    [{"POS": "VERB"}, {"POS": "DET"}, {"POS": "PROPN"}],
-
-]
-matcher.add("ΘΥΜΑ", patterns)
+victim_patters = matcher.add("ΘΥΜΑ", victim_patterns)
 
 VERBS_TO_EXCLUDE = ['φέρει', 'υποστήριξη', 'ανέφερε']  # 'φέρεται', 'ανέφερε', 'είπαν'
 
