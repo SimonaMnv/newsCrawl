@@ -1,13 +1,39 @@
 import spacy
-from spacy import displacy
 import regex as re
 from elasticsearchapp.query_results import gather_raw_verbs, get_specific_analyzed, get_latest_raw_data
 import nltk
+from spacy.matcher import Matcher
 
 # nltk.download('punkt') # only run once
 nlp = spacy.load('el_core_news_lg')
 
-VERBS_TO_EXCLUDE = ['φέρεται', 'ανέφερε']
+matcher = Matcher(nlp.vocab)
+patterns = [
+    [{"POS": "NOUN"}, {"DEP": "det"}, {"DEP": "nmod"}],
+    [{"POS": "NOUN"}, {"DEP": "det"}, {"POS": "X"}],
+    [{"POS": "NOUN"}, {"POS": "NUM"}, {"POS": "NOUN"}],
+    [{"POS": "NOUN"}, {"POS": "NUM"}, {"POS": "ADJ"}],
+    [{"POS": "NOUN"}, {"DEP": "det"}, {"POS": "ADJ"}, {"POS": "NOUN"}],
+    [{"POS": "NOUN"}, {"DEP": "det"}, {"POS": "ADJ"}],
+    [{"POS": "VERB"}, {"POS": "NUM"}, {"POS": "NOUN"}],
+    [{"POS": "NOUN"}, {"DEP": "det"}, {"POS": "NUM"}, {"POS": "NOUN"}],
+    [{"POS": "VERB"}, {"POS": "CCONJ"}, {"POS": "VERB"}, {"POS": "NUM"}, {"POS": "NOUN"}],
+    [{"POS": "VERB"}, {"POS": "DET"}, {"POS": "NOUN"}, {"POS": "DET"}, {"POS": "X"}],
+    [{"POS": "VERB"}, {"POS": "DET"}, {"POS": "NOUN"}, {"POS": "DET"}, {"POS": "NOUN"}],
+    [{"POS": "DET"}, {"POS": "NOUN"}, {"POS": "DET"}, {"POS": "VERB"}],
+    [{"POS": "DET"}, {"POS": "NOUN"}, {"POS": "PRON"}, {"POS": "VERB"}],
+    [{"POS": "VERB"}, {"POS": "DET"}, {"POS": "ADJ"}, {"POS": "NOUN"}],
+    [{"POS": "VERB"}, {"POS": "DET"}, {"POS": "NOUN"}, {"POS": "PRON"}],
+    [{"POS": "VERB"}, {"POS": "DET"}, {"POS": "PROPN"}],
+
+]
+matcher.add("ΘΥΜΑ", patterns)
+
+VERBS_TO_EXCLUDE = ['φέρει', 'υποστήριξη', 'ανέφερε']  # 'φέρεται', 'ανέφερε', 'είπαν'
+
+
+def most_common(lst):
+    return max(set(lst), key=lst.count)
 
 
 def important_verb_dict_spacy(type, thres):
@@ -24,70 +50,75 @@ def important_verb_dict_spacy(type, thres):
     return important_verbs
 
 
-def dependency_collector(article, to_print=False):
+def dependency_collector(article, type=None):
+    # https://explosion.ai/demos/displacy
     doc = nlp(article)
     subject = []
     object = []
     verb = []
     gender_subject = []
     gender_object = []
-    place_v2 = []
+    gender = "ΑΓΝΩΣΤΟ"
 
-    for token in doc:
-        if len(token) > 4:  # skip and ignore small words, probably junk
-            # extract verb
-            if token.pos_ == 'VERB':
-                verb.append(token.text)
-
-            # if to_print is True:
-            #     print(token.text, '->', token.pos_, token.dep_)
-            # print(token.orth_, token.dep_, token.head.orth_, [t.orth_ for t in token.lefts], [t.orth_ for t in token.rights])
-
+    if type is "victim":
+        for token in doc:
+            # print(token.text, '->', token.pos_, token.dep_)
             check = re.findall("Gender=[^|]*", token.tag_)
             if not check == []:
                 if not check[0] == 'Gender=Neut':
-                    # extract subject
-                    if token.dep_ == 'nsubj' or token.dep_ == 'iobj':  # or token.dep_ == 'conj':
-                        gender_subject.append(re.findall("Gender=[^|]*", token.tag_))
-                        subject.append(token.text)
-                    # extract object
-                    if token.dep_ == 'dobj' or token.dep_ == 'obj':
-                        gender_object.append(re.findall("Gender=[^|]*", token.tag_))
-                        object.append(token.text)
+                    if token.dep_ == 'dobj' or token.dep_ == 'obj' or token.dep_ == "det" or token.dep_ == "nsubj":
+                        gender = check[0].split("=")[1]
+            if 'κορίτ' in token.text: gender = "Κορίτσι"
+            if 'αγόρ' in token.text: gender = "Αγόρι"
+            if 'παιδί' in token.text: gender = "Παιδί"
+            if gender == 'Masc': gender = "ΑΝΤΡΑΣ"
+            if gender == 'Fem': gender = "ΓΥΝΑΙΚΑ"
+        return gender
+    else:
+        for token in doc:
+            if len(token) > 4:  # skip and ignore small words, probably junk
+                # extract verb
+                if token.pos_ == 'VERB':
+                    verb.append(token.text)
 
-                    if token.pos_ == 'PROPN' and token.dep_ == 'obl':
-                        place_v2.append(token.text)
+                check = re.findall("Gender=[^|]*", token.tag_)
+                if not check == []:
+                    if not check[0] == 'Gender=Neut':
+                        # extract subject
+                        if token.dep_ == 'nsubj' or token.dep_ == 'iobj':  # or token.dep_ == 'conj':
+                            gender_subject.append(re.findall("Gender=[^|]*", token.tag_))
+                            subject.append(token.text)
+                        # extract object
+                        if token.dep_ == 'dobj' or token.dep_ == 'obj':
+                            gender_object.append(re.findall("Gender=[^|]*", token.tag_))
+                            object.append(token.text)
 
-                verb.append(token.text)
+                    verb.append(token.text)
 
-    # with open("dependencyLogs/dependency.html", "w") as file:
-    #     file.write(displacy.render(doc, style='dep', jupyter=False))
-
-    return verb, subject, object, gender_subject, gender_object, place_v2
+    return verb, subject, object, gender_subject, gender_object
 
 
 # get 1 article based on index given for testing
-raw_data, raw_type = get_latest_raw_data(article_index=3, article_type='δολοφονια')
-verb, subject, object, gender_subj, gender_obj, place_v2 = dependency_collector(raw_data[0][0])
+raw_data, raw_type = get_latest_raw_data(article_index=9, article_type='δολοφονια')
+verb, subject, object, gender_subj, gender_obj = dependency_collector(raw_data[0][0])
 
-# leave space after punctuation -> fix this @crawling stage
+# leave space after punctuation
 data = raw_data[0][0].replace('!', '. ').replace(":", '. ')
 print("article:", data)
 
-verbs_dictionary = important_verb_dict_spacy('δολοφονια', 70)  # TODO: change this if article isn't murder, play with threshold
+verbs_dictionary = important_verb_dict_spacy('δολοφονια', 100)  # TODO: change this if article isn't murder
 
 # all the verbs in the article
 article_verbs = []
-status = "ΔΕΝ ΟΜΟΛΟΓΗΣΕ"
+status = "ΑΓΝΩΣΤΟ"
 for v in verb:
     if len(get_specific_analyzed(v)) > 0:
         article_verbs.append({
             'raw': v,
             'analyzed': get_specific_analyzed(v)[0][0]
         })
-        if 'ομολόγησε' in v:
-            status = "ΟΜΟΛΟΓΗΣΕ"
-
+        if 'ομολόγησε' in v or 'συνελήφθη' in v or 'φυλακίστηκε' in v:
+            status = "ΣΥΝΕΛΗΦΘΗ"
 
 # all the verbs in dictionary from elastic
 elastic_dict_verbs = []
@@ -98,8 +129,9 @@ for v in verbs_dictionary:
     })
 
 # all the matching from the above two
-matched_verbs = [[v2['raw'] for v1 in elastic_dict_verbs for v2 in article_verbs if v1['analyzed'] == v2['analyzed'] and v2['raw'] not in VERBS_TO_EXCLUDE]]
-print("Matched verbs:", set(matched_verbs[0]))
+matched_verbs = [[v2['raw'] for v1 in elastic_dict_verbs for v2 in article_verbs if v1['analyzed'] == v2['analyzed']
+                  and v2['raw'] not in VERBS_TO_EXCLUDE]]
+print("Elastic keywords and article matching verbs:", set(matched_verbs[0]))
 
 # break article to sentences and find object and subject only where matched verb is located
 tokens = nltk.sent_tokenize(data)
@@ -109,16 +141,24 @@ for verb in set(matched_verbs[0]):
     for t in tokens:
         if verb in t:
             important_sentences.append(t)
-            print("Article sentence:", t, "___", "verb matched:", verb)
+            print("Article (Important) sentence:", t, "___", "verb matched:", verb)
 
-# now get the subjects and objects of each of the important sentences
+# POS Pattern matching based on important sentences and based on matching verbs
+genders = []
 for sent in important_sentences:
-    verb, subject, object_, gender_subj, gender_obj, place_v2 = dependency_collector(sent, to_print=True)
-    if not subject == []:
-        print("[1] ΘΥΤΗΣ:", subject, "ΦΥΛΟ:", gender_subj)
-    if not object_ == []:
-        print("[2] ΘΥΜΑ:", object_, "ΦΥΛΟ:", gender_obj)
-    if not place_v2 == []:
-        print("[3] ΤΟΠΟΣ/ΧΡΟΝΟΣ:", place_v2)
+    doc = nlp(sent)
+    # dependency_collector(sent, type="victim")
+    matches = matcher(doc)
+    for match_id, start, end in matches:
+        string_id = nlp.vocab.strings[match_id]
+        span = doc[start:end]
+        matching_verbs = set(matched_verbs[0])
+        for verb in matching_verbs:
+            # print("VERB--", verb.lower(), "SPANTEXT--", span.text.lower())
+            if verb.lower() in span.text.lower():
+                gender = dependency_collector(span.text, type="victim")
+                genders.append(gender)
+                print(string_id, span.text, "ΦΥΛΟ:", gender)
 
-print("[5] ΚΑΤΑΣΤΑΣΗ:", status)
+print("[1] ΦΥΛΟ ΘΥΜΑΤΟΣ:", most_common(genders))
+print("[3] ΚΑΤΑΣΤΑΣΗ:", status)
