@@ -91,17 +91,17 @@ def dependency_collector(article, type=None):
         return verb, subject, object, gender_subject, gender_object
 
 
-def analyse_victim():
+def analyse_victim(raw_data, crime_type):
     """ get victim's gender """
     # get 1 article based on index given for testing
-    raw_data, raw_type = get_latest_raw_data(article_index=0, article_type='δολοφονια')
-    verb, subject, object, gender_subj, gender_obj = dependency_collector(raw_data[0][0])
+    # raw_data, raw_type = get_latest_raw_data(article_index=1, article_type='δολοφονια')  # todo: [1]
+    verb, subject, object, gender_subj, gender_obj = dependency_collector(raw_data)
 
     # shorten sentences
-    data = raw_data[0][0].replace('!', '. ').replace(":", '. ').replace(", ", '. ').replace("(", "").replace(")", "")
+    data = raw_data.replace('!', '. ').replace(":", '. ').replace(", ", '. ').replace("(", "").replace(")", "")
     print("Article:", data)
 
-    verbs_dictionary = important_verb_dict_spacy('δολοφονια', 130)  # TODO: queries only murder now, change
+    verbs_dictionary = important_verb_dict_spacy(crime_type, 130)  # TODO: [2] queries only murder now, change
 
     # all the verbs in the article
     article_verbs = []
@@ -161,8 +161,10 @@ def analyse_victim():
     return important_sentences, most_common(victim_genders), status
 
 
-analyse_victim()
+# analyse_victim()
 
 # doc = nlp("Υπόθεση δολοφονίας Λίνας Κοεμτζή.")
 # for token in doc:
 #     print(token.text, token.dep_, token.pos_)
+
+# todo: train a NER for "PERSON" recognition and then apply the above POS on the sentence matching a "PERSON"  (?)

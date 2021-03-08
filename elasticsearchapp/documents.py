@@ -20,7 +20,7 @@ article_index.settings(
 @article_index.document
 class ArticleDocument(Document):
     title = fields.TextField(
-        analyzer=greek_analyzer,   # main analyzer
+        analyzer=greek_analyzer,  # main analyzer
         fields={'simple_analyzer': fields.TextField(analyzer=greek_simple_analyzer)}
     )
     date = fields.DateField()
@@ -28,18 +28,27 @@ class ArticleDocument(Document):
         analyzer=greek_analyzer,
         fields={'simple_analyzer': fields.TextField(analyzer=greek_simple_analyzer)}
     )
-    tags = fields.TextField(
-        analyzer=greek_analyzer,
-        fields={'simple_analyzer': fields.TextField(analyzer=greek_simple_analyzer)}
-    )
+    tags = fields.TextField()
     author = fields.TextField()
     link = fields.TextField()
     type = fields.TextField()
     scope = fields.TextField()
 
+    crime_analysis = fields.NestedField(
+        attr='article_analysis',
+        properties={
+            'acts_committed': fields.TextField(),
+            'location_of_crime': fields.TextField(),
+            'ages_involved': fields.TextField(),
+            'time_of_crime': fields.TextField(),
+            'victim_gender': fields.TextField(),
+            'criminal_status': fields.TextField(),
+            'drug_type': fields.TextField(),
+        }
+    )
+
     class Django:
         model = ArticleOfInterest
-
 
 # sync django / elastic:
 # 1. create elasticsearchapp indexes: python manage.py elasticsearchapp --create -f
