@@ -87,6 +87,24 @@ app.layout = html.Div(
                 end_date=date.today()
             ),
         ]),
+        # popup modal
+        dcc.Loading(
+            id="loading-2",
+            type="default",
+            children=[
+                html.Div(
+                    id="modal-div",
+                    children=[
+                        dbc.Modal(
+                            children=[
+                                dbc.ModalFooter(
+                                    dbc.Button("Close", id="close", className="ml-auto")
+                                ),
+                            ],
+                            id="modal"
+                        ),
+                    ]),
+            ]),
         html.Div(
             id="app-container",
             children=[
@@ -121,7 +139,6 @@ app.layout = html.Div(
                                         generate_section_banner("Results"),
                                         dash_table.DataTable(
                                             id='crime_table',
-                                            # columns=[{"name": i, "id": i} for i in COLUMNS],
                                             page_size=10,
                                             fixed_rows={'headers': True},
                                             style_table={'overflowY': 'scroll'},
@@ -184,11 +201,11 @@ def update_values_and_charts(crime_type, btn):
         for type, body, title in zip(crime_merged_table['Type'], crime_merged_table['Body'], crime_merged_table['Title']):
             context = title + " " + body
             if crime_type == 'ΔΟΛΟΦΟΝΙΑ':   # elastic top verb similarity mixed with POS analysis and NER analysis
-                columns = ['Date', 'Title', 'Body', 'Type', 'Victim', 'Criminal Status', 'Act(s)', 'Ages', 'Crime Date']
+                columns = ['Date', 'Title', 'Body', 'Type', 'Victim', 'Criminal Status', 'Acts', 'Ages', 'Crime Date']
 
                 article_summary, victim_gender, criminal_status, act, age, date = analyse_victim(context, crime_type)
                 victims.append(victim_gender)
-                c_status = criminal_status
+                c_status.append(criminal_status)
                 acts.append([str(x)+" " for x in act])
                 ages.append([str(x)+" " for x in age])
                 dates.append([str(x)+" " for x in date])
@@ -216,6 +233,49 @@ def update_values_and_charts(crime_type, btn):
 
     else:
         return [], [], []
+
+
+@app.callback(
+    [
+        Output("modal", "is_open"),
+        Output('modal', 'children'),
+    ],
+    [
+        Input("crime_table", "active_cell"),  # open button
+        Input("close", "n_clicks"),  # close button
+        Input("crime_table", "data"),
+    ],
+    [State("modal", "is_open")],
+)
+def toggle_modal(n1, n2, crime_table, is_open):
+    if not crime_table:
+        return no_update, no_update
+
+    if n1 is not None:
+        if (n1 and n1['column_id'] == 'Title') or n2:
+            return not is_open, (
+                       dbc.ModalHeader("Full Title of Article"),
+                       dbc.ModalBody(children=[
+                               html.Label(html.A(crime_table[n1['row']]['Title']))]
+                               ),
+                       dbc.ModalFooter(
+                           dbc.Button("Close", id="close", className="ml-auto")
+                       ),
+                   )
+        elif (n1 and n1['column_id'] == 'Body') or n2:
+            return not is_open, (
+                dbc.ModalHeader("Full Body of Article"),
+                dbc.ModalBody(children=[
+                    html.Label(html.A(crime_table[n1['row']]['Body']))]
+                ),
+                dbc.ModalFooter(
+                    dbc.Button("Close", id="close", className="ml-auto")
+                ),
+            )
+        else:
+            return is_open, no_update
+    else:
+        return no_update, no_update
 
 
 @app.callback([
