@@ -30,6 +30,17 @@ def most_common(lst):
     return max(set(lst), key=lst.count)
 
 
+def custom_NER_analysis(sentence):
+    nlp = spacy.load('../NLP/NER/custom_model')
+    doc = nlp(sentence)
+
+    act = [e for e in doc.ents if e.label_ == 'ΠΡΑΞΗ']
+    age = [e for e in doc.ents if e.label_ == 'ΗΛΙΚΙΑ']
+    date = [e for e in doc.ents if e.label_ == 'ΗΜΕΡΟΜΗΝΙΑ']
+
+    return act, age, date
+
+
 def important_verb_dict_spacy(type, thres):
     # take the important verbs from all articles from elastic based on type
     important_verbs = []
@@ -97,6 +108,8 @@ def analyse_victim(raw_data, crime_type):
     # raw_data, raw_type = get_latest_raw_data(article_index=1, article_type='δολοφονια')  # todo: [1]
     verb, subject, object, gender_subj, gender_obj = dependency_collector(raw_data)
 
+    act, age, date = custom_NER_analysis(raw_data)
+
     # shorten sentences
     data = raw_data.replace('!', '. ').replace(":", '. ').replace(", ", '. ').replace("(", "").replace(")", "")
     print("Article:", data)
@@ -157,8 +170,11 @@ def analyse_victim(raw_data, crime_type):
 
     print("[1] ΘΥΜΑ:", most_common(victim_genders))
     print("[2] ΚΑΤΑΣΤΑΣΗ:", status)
+    print("[3] ΠΡΑΞΕΙΣ:", act)
+    print("[4] ΗΛΙΚΙΕΣ:", age)
+    print("[5] ΗΜΕΡΟΜΗΝΙΑ:", date)
 
-    return important_sentences, most_common(victim_genders), status
+    return important_sentences, most_common(victim_genders), status, act, age, date
 
 
 # analyse_victim()

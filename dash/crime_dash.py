@@ -32,7 +32,7 @@ UNIQUE_TERMS = ['ΔΟΛΟΦΟΝΙΑ', 'ΝΑΡΚΩΤΙΚΑ', 'ΤΡΟΜΟΚΡΑΤ�
 
 def generated_data(start_date, end_date, crime_type):
     # load data
-    data = get_n_raw_data(crime_type, 5)
+    data = get_n_raw_data(crime_type, 10)
 
     for datum in data:
         refactored_date = datum['Date'].split("T")
@@ -52,13 +52,6 @@ def build_banner():
         children=[
             html.Div(
                 id="banner-text",
-                children=[
-                    html.H5("GR.C.A"),
-                    html.H6("Greek Crime Analytics"),
-                ],
-            ),
-            html.Div(
-                id="banner-logo",
                 children=[
                     html.Button(
                         id="learn-more-button", children="Greek Crime Analytics", n_clicks=0
@@ -129,7 +122,7 @@ app.layout = html.Div(
                                         dash_table.DataTable(
                                             id='crime_table',
                                             # columns=[{"name": i, "id": i} for i in COLUMNS],
-                                            page_size=20,
+                                            page_size=10,
                                             fixed_rows={'headers': True},
                                             style_table={'overflowY': 'scroll'},
                                             style_header={
@@ -181,21 +174,30 @@ def update_values_and_charts(crime_type, btn):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     victims = []
     c_status = []
+    acts = []
+    ages = []
+    dates = []
 
     if 'btn-submit' in changed_id:
         crime_merged_table = generated_data(None, None, crime_type)
 
         for type, body, title in zip(crime_merged_table['Type'], crime_merged_table['Body'], crime_merged_table['Title']):
             context = title + " " + body
-            if crime_type == 'ΔΟΛΟΦΟΝΙΑ':
-                columns = ['Date', 'Title', 'Body', 'Type', 'Victim', 'Criminal Status']
+            if crime_type == 'ΔΟΛΟΦΟΝΙΑ':   # elastic top verb similarity mixed with POS analysis and NER analysis
+                columns = ['Date', 'Title', 'Body', 'Type', 'Victim', 'Criminal Status', 'Act(s)', 'Ages', 'Crime Date']
 
-                article_summary, victim_gender, criminal_status = analyse_victim(context, crime_type)
+                article_summary, victim_gender, criminal_status, act, age, date = analyse_victim(context, crime_type)
                 victims.append(victim_gender)
                 c_status = criminal_status
+                acts.append([str(x)+" " for x in act])
+                ages.append([str(x)+" " for x in age])
+                dates.append([str(x)+" " for x in date])
 
         crime_merged_table['Victim'] = victims
         crime_merged_table['Criminal Status'] = c_status
+        crime_merged_table['Acts'] = acts
+        crime_merged_table['Ages'] = ages
+        crime_merged_table['Crime Date'] = dates
 
         if len(crime_merged_table) == 0:
             return no_update, no_update, no_update
