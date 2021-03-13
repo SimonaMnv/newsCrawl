@@ -120,35 +120,35 @@ a {
     fill:#314b56;
 }
 
-#fdk_risk_table div::-webkit-scrollbar-track {
+#crime_table div::-webkit-scrollbar-track {
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
     border-radius: 10px;
     background-color: rgba(0, 0, 0, 0.3);
 }
 
-#fdk_risk_table div::-webkit-scrollbar {
+#crime_table div::-webkit-scrollbar {
     width: 6px;
     background-color: rgba(146, 224, 255, 0.75);
 }
 
-#fdk_risk_table div::-webkit-scrollbar-thumb {
+#crime_table div::-webkit-scrollbar-thumb {
     border-radius: 10px;
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, .3);
     background-color: #555;
 }
 
-#fdk_merged_table div::-webkit-scrollbar-track {
+#crime_table div::-webkit-scrollbar-track {
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
     border-radius: 10px;
     background-color: rgba(0, 0, 0, 0.3);
 }
 
-#fdk_merged_table div::-webkit-scrollbar {
+#crime_table div::-webkit-scrollbar {
     width: 6px;
     background-color: rgba(146, 224, 255, 0.75);
 }
 
-#fdk_merged_table div::-webkit-scrollbar-thumb {
+#crime_table div::-webkit-scrollbar-thumb {
     border-radius: 10px;
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, .3);
     background-color: #555;

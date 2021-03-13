@@ -101,7 +101,7 @@ def analyse_victim(raw_data, crime_type):
     data = raw_data.replace('!', '. ').replace(":", '. ').replace(", ", '. ').replace("(", "").replace(")", "")
     print("Article:", data)
 
-    verbs_dictionary = important_verb_dict_spacy(crime_type, 130)  # TODO: [2] queries only murder now, change
+    verbs_dictionary = important_verb_dict_spacy(crime_type, 130)
 
     # all the verbs in the article
     article_verbs = []

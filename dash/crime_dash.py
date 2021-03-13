@@ -14,13 +14,34 @@ import dash_daq as daq
 from functools import reduce
 from sklearn import preprocessing
 import numpy as np
+from spacy.lang.lex_attrs import lower
 from NLP.POS.pos import analyse_victim
+from elasticsearchapp.query_results import get_n_raw_data
 
 app = dash.Dash(
     __name__,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}]
 )
+
+global UNIQUE_TERMS
+global END_DATE
+
+UNIQUE_TERMS = ['ΔΟΛΟΦΟΝΙΑ', 'ΝΑΡΚΩΤΙΚΑ', 'ΤΡΟΜΟΚΡΑΤΙΚΗ ΕΠΙΘΕΣΗ', 'ΛΗΣΤΕΙΑ', 'ΣΕΞΟΥΑΛΙΚΟ ΕΓΚΛΗΜΑ']
+
+
+def generated_data(start_date, end_date, crime_type):
+    # load data
+    data = get_n_raw_data(crime_type, 5)
+
+    for datum in data:
+        refactored_date = datum['Date'].split("T")
+        datum['Date'] = refactored_date[0]
+
+    df = pd.DataFrame(data=data)
+    df.to_csv('data/' + crime_type + '.csv', index=False)
+
+    return df
 
 
 # top banner
@@ -40,9 +61,8 @@ def build_banner():
                 id="banner-logo",
                 children=[
                     html.Button(
-                        id="learn-more-button", children="I Like Trees", n_clicks=0
+                        id="learn-more-button", children="Greek Crime Analytics", n_clicks=0
                     ),
-                    html.Img(id="logo", src=app.get_asset_url("agroknow-logo.png")),
                 ],
             ),
         ],
@@ -51,30 +71,6 @@ def build_banner():
 
 def generate_section_banner(title):
     return html.Div(className="section-banner", children=title)
-
-
-def my_crime_table():
-    article_summary, victim_gender, criminal_status = analyse_victim()
-
-    layout = Layout(
-        plot_bgcolor='rgba(49, 75, 86, 1)',
-        paper_bgcolor='rgba(22, 26, 40, 1)',
-    )
-
-    fig = go.Figure(
-        layout=layout,
-        data=[
-            go.Table(
-                cells=dict(
-                    values=article_summary,
-                    line_color='darkslategray',
-                    fill=dict(color=['white']),
-                    align=['left', 'center'],
-                    font_size=12,
-                    height=30)
-            )])
-
-    return fig
 
 
 app.layout = html.Div(
@@ -87,18 +83,154 @@ app.layout = html.Div(
             n_intervals=50,  # start at batch 50
             disabled=True,
         ),
+        html.Div(id='choices', children=[
+            dcc.DatePickerRange(
+                id='my-date-picker-range',
+                min_date_allowed=date(2012, 1, 1),
+                max_date_allowed=date.today(),
+                initial_visible_month=date.today(),
+                display_format='Y-MM-DD',
+                start_date=date(2012, 1, 1),
+                end_date=date.today()
+            ),
+        ]),
         html.Div(
             id="app-container",
             children=[
                 html.Div(
                     id="news_table",
                     children=[
-                        generate_section_banner("News"),
-                        dcc.Graph(figure=my_crime_table())
+                        html.Div(
+                            id="selector",
+                            children=[
+                                # drop down menu
+                                generate_section_banner("Filter by Crime Type"),
+                                dcc.Loading(
+                                    id="loading-1",
+                                    type="default",
+                                    children=[
+                                        dcc.Dropdown(
+                                            id='crime_type_dd',
+                                            options=[],
+                                            clearable=False,
+                                        ),
+                                    ]),
+                            ]),
+                        dcc.Loading(
+                            id="loading-data",
+                            type="cube",
+                            children=[
+                                html.Div(
+                                    id="fdk-part",
+                                    children=[
+                                        html.Button('Apply Filters', id='btn-submit', n_clicks=0,
+                                                    style=dict(width='100%')),
+                                        generate_section_banner("Results"),
+                                        dash_table.DataTable(
+                                            id='crime_table',
+                                            # columns=[{"name": i, "id": i} for i in COLUMNS],
+                                            page_size=20,
+                                            fixed_rows={'headers': True},
+                                            style_table={'overflowY': 'scroll'},
+                                            style_header={
+                                                'backgroundColor': '#314b56',
+                                                'color': 'white',
+                                                'fontWeight': 'bold'
+                                            },
+                                            style_as_list_view=True,
+                                            style_cell={
+                                                'backgroundColor': '#1e2130',
+                                                'color': 'white',
+                                                'textAlign': 'left',
+                                                'padding': '15px',
+                                                'font-family': 'sans-serif',
+                                                'minWidth': '180px', 'width': '180px',
+                                                'maxWidth': '300px',
+                                                'overflow': 'hidden',
+                                                'textOverflow': 'ellipsis',
+                                            },
+                                            style_data_conditional=(),
+                                            css=[{
+                                                'selector': '.dash-table-tooltip',
+                                                'rule': 'background-color: black; font-family: sans-serif;'
+                                            }],
+                                            tooltip_delay=0,
+                                            tooltip_duration=None,
+                                        ),
+                                    ]),
+                            ]),
                     ]),
             ]),
     ]
 )
+
+
+@app.callback(
+    [
+        Output('crime_table', 'data'),
+        Output('crime_table', 'columns'),
+        Output('crime_table', 'style_data_conditional')
+    ],
+    [
+        Input("crime_type_dd", "value"),
+        Input('btn-submit', 'n_clicks'),
+    ],
+)
+def update_values_and_charts(crime_type, btn):
+    # apply on each click
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    victims = []
+    c_status = []
+
+    if 'btn-submit' in changed_id:
+        crime_merged_table = generated_data(None, None, crime_type)
+
+        for type, body, title in zip(crime_merged_table['Type'], crime_merged_table['Body'], crime_merged_table['Title']):
+            context = title + " " + body
+            if crime_type == 'ΔΟΛΟΦΟΝΙΑ':
+                columns = ['Date', 'Title', 'Body', 'Type', 'Victim', 'Criminal Status']
+
+                article_summary, victim_gender, criminal_status = analyse_victim(context, crime_type)
+                victims.append(victim_gender)
+                c_status = criminal_status
+
+        crime_merged_table['Victim'] = victims
+        crime_merged_table['Criminal Status'] = c_status
+
+        if len(crime_merged_table) == 0:
+            return no_update, no_update, no_update
+
+        data_table = crime_merged_table.to_dict("records")
+
+        return data_table, [{"name": i, "id": i} for i in columns], (
+            [
+                {
+                    "if": {"state": "selected"},  # 'active' | 'selected'
+                    "backgroundColor": "rgba(0, 116, 217, 0.3)",
+                    "border": "1px solid blue",
+                }
+            ]
+        )
+
+    else:
+        return [], [], []
+
+
+@app.callback([
+    Output("crime_type_dd", "options"),
+    Output("crime_type_dd", "value"),
+],
+    [
+        Input('my-date-picker-range', 'start_date'),
+        Input('my-date-picker-range', 'end_date')
+    ])
+def generate_initial_date_terms(start_date, end_date):
+    global END_DATE
+    END_DATE = end_date
+
+    return [{'value': x, 'label': x}
+            for x in UNIQUE_TERMS], UNIQUE_TERMS[0]
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)

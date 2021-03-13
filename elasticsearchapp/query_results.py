@@ -7,10 +7,11 @@ def gather_raw_verbs(type, threshold):
     url = "http://127.0.0.1:9200/articles/_search"
     keyword = []
 
-    payload = "{\r\n  \"size\": 0,\r\n  \"query\": {\r\n    \"term\": {\r\n      \"type\": {\r\n        " \
-              "\"value\": \"" + type + "\"\r\n      }\r\n    }\r\n  }, \r\n  \"aggregations\": {\r\n    \"NAME\": {\r\n " \
-                                       "     \"significant_text\": {\r\n\"field\": \"body.simple_analyzer\",\r\n " \
-                                       "  \"size\":" + str(threshold) + "\r\n      }\r\n    }\r\n  }\r\n}"
+    payload = "{\r\n  \"size\":0, \r\n  \"query\": {\r\n    \"match\": {\r\n      \"type\": \""+ type +"\"\r\n   " \
+                                                                                                       " }\r\n " \
+              " },\r\n  \"aggregations\":{\r\n    \"NAME\":{\r\n      \"significant_text\": {\r\n       " \
+              " \"field\": \"body.simple_analyzer\",\r\n        \"size\": " +str(threshold) + "\r\n      }\r\n   " \
+                                                                                              " }\r\n  }\r\n}"
     headers = {
         'Content-Type': 'application/json'
     }
@@ -49,6 +50,33 @@ def get_latest_raw_data(article_index=0, article_type='δολοφονια'):
     raw_type.append(response["hits"]["hits"][article_index]["_source"]["type"])
 
     return raw_data, raw_type
+
+
+# for dash data
+def get_n_raw_data(crime_type, n):
+
+    url = "http://127.0.0.1:9200/articles/_search"
+    total_n_data = []
+
+    payload = "{\r\n  \"size\":" + str(
+        n) + ", \r\n  \"query\": {\r\n    \"match\": {\r\n      \"type\": \"" + crime_type + "\"\r\n    }\r\n  }\r\n}"
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
+    response = response.json()
+
+    for datum in response['hits']['hits']:
+        data = {
+            "Title": datum['_source']['title'],
+            "Date": datum['_source']['date'],
+            "Body": datum['_source']['body'],
+            "Type": datum['_source']['type'],
+        }
+        total_n_data.append(data)
+
+    return total_n_data
 
 
 def get_all_raw_data():
