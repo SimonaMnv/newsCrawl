@@ -7,3 +7,4 @@ migrations
 .csv
 doccano.db
 cache
+data

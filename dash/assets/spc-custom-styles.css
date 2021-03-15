@@ -44,7 +44,7 @@ body {
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid #4B5460;
-    padding: 1rem 10rem;
+    padding: 2rem 0rem;
     width: 100%;
 }
 
@@ -65,9 +65,9 @@ body {
 
 .banner button {
     color: #95969A;
-    margin-right: 10px;
-    height: 3rem;
-    line-height: 3rem;
+    margin-right: 0px;
+    height: 5rem;
+    line-height: 5rem;
 }
 
 #banner-logo {
@@ -84,7 +84,7 @@ body {
 
 .banner Img {
     height: 3rem;
-    margin: 0px 10px;
+    margin: 0px px;
 }
 
 /* The Modal (background) */
@@ -601,6 +601,7 @@ body {
     .banner {
         flex-direction: column-reverse;
         padding: 1rem 0.5rem;
+
     }
 
     #banner-text {

@@ -9,8 +9,9 @@ raw_data, raw_type = get_latest_raw_data(article_index=0, article_type='δολο
 
 specific_text = raw_data[0][0]
 
-# test the custom model
-nlp2 = spacy.load('custom_model/')
 doc = nlp(specific_text)
+
+doc.ents = [e for e in doc.ents if e.label_ == 'ΠΡΑΞΗ']
+print(doc.ents)
 
 print(spacy.displacy.serve(doc, style='ent'))
