@@ -1,13 +1,7 @@
 from elasticsearchapp.query_results import get_all_analyzed_data
 import pandas as pd
 import numpy as np
-from nltk.tokenize import word_tokenize
-from nltk import pos_tag
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
 from sklearn.preprocessing import LabelEncoder
-from collections import defaultdict
-from nltk.corpus import wordnet as wn
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn import model_selection, naive_bayes, svm
 from sklearn.metrics import accuracy_score
@@ -32,7 +26,7 @@ def export_dataset_df():
 
 
 # export_dataset_df()
-corpus = pd.read_csv('../dfs/newsbomb_article.csv')
+corpus = pd.read_csv('../../dfs/newsbomb_article.csv')
 
 train_X, test_X, train_Y, test_Y = model_selection.train_test_split(corpus['article_tokens'],
                                                                     corpus['crime_type'],
@@ -42,7 +36,7 @@ Encoder = LabelEncoder()
 train_Y = Encoder.fit_transform(train_Y)
 test_Y = Encoder.fit_transform(test_Y)
 
-# check the given classe id
+# check the given class id
 integer_mapping = {l: i for i, l in enumerate(Encoder.classes_)}
 print(integer_mapping)
 
@@ -67,7 +61,7 @@ predictions_SVM = SVM.predict(Test_X_Tfidf)
 print("SVM Accuracy Score: ", accuracy_score(predictions_SVM, test_Y)*100)
 
 # test unknown dataset -> not in db
-no_label_corpus = pd.read_csv('../dfs/newsbomb_article_predict.csv')
+no_label_corpus = pd.read_csv('../../dfs/newsbomb_article_predict.csv')
 test_unknown = no_label_corpus['article_tokens']
 
 test_unknown_Tfidf = Tfidf_vect.transform(test_unknown)

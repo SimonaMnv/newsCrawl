@@ -5,3 +5,6 @@ migrations
 .json
 .txt
 .csv
+doccano.db
+cache
+data

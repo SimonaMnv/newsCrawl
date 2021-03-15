@@ -66,5 +66,5 @@ class NewsbombSpider(scrapy.Spider):
 
         yield article
 
-# 1. to scrape: go in crawling>crawling: scrapy crawl newsbomb
+# 1. to scrape: go in crawling>/crawling: scrapy crawl newsbomb
 # 2. to check the html manually before parsing: scrapy shell > fetch(site) > print(response.text)
