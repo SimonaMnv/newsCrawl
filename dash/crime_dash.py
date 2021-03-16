@@ -17,6 +17,7 @@ import numpy as np
 from spacy.lang.lex_attrs import lower
 from NLP.POS.pos import analyse_victim
 from elasticsearchapp.query_results import get_n_raw_data
+import plotly.express as px
 
 app = dash.Dash(
     __name__,
@@ -32,7 +33,7 @@ UNIQUE_TERMS = ['ΔΟΛΟΦΟΝΙΑ', 'ΝΑΡΚΩΤΙΚΑ', 'ΤΡΟΜΟΚΡΑΤ�
 
 def generated_data(start_date, end_date, crime_type):
     # load data
-    data = get_n_raw_data(crime_type, 10)
+    data = get_n_raw_data(crime_type, start_date, end_date)
 
     for datum in data:
         refactored_date = datum['Date'].split("T")
@@ -84,7 +85,7 @@ app.layout = html.Div(
                 initial_visible_month=date.today(),
                 display_format='Y-MM-DD',
                 start_date=date(2012, 1, 1),
-                end_date=date.today()
+                end_date=date(2012, 12, 12)
             ),
         ]),
         # popup modal
@@ -168,11 +169,48 @@ app.layout = html.Div(
                                             tooltip_duration=None,
                                         ),
                                     ]),
+                                html.Div(
+                                    id="chart-part",
+                                    children=[
+                                        generate_section_banner("Pie-chart Analysis"),
+                                        dcc.Dropdown(
+                                            id='chart_values',
+                                            value='sex',
+                                            options=[{'value': x, 'label': x}
+                                                     for x in ['sex']],
+                                            clearable=False
+                                        ),
+                                        dcc.Graph(id="pie_chart"),
+                                    ], style={"margin-top": "50px", 'display': 'none'}),
                             ]),
                     ]),
             ]),
     ]
 )
+
+
+@app.callback(
+    Output("pie_chart", "figure"),
+    Output("chart-part", "style"),
+    [
+        Input('crime_table', 'data'),
+        Input('chart_values', 'value'),
+    ])
+def generate_chart(table_values, chart_values):
+    values = []
+
+    if not table_values:
+        return {}, {'display': 'none'}
+    else:
+        for data in table_values:
+            values.append(data['Victim'])
+
+        df = pd.DataFrame(data=values, columns=['Victim'])
+        df['frequency'] = df['Victim'].map(df['Victim'].value_counts())
+
+        fig = px.pie(df, values=df['frequency'], names=df['Victim'])
+
+        return fig, {'display': 'block'}
 
 
 @app.callback(
@@ -184,9 +222,11 @@ app.layout = html.Div(
     [
         Input("crime_type_dd", "value"),
         Input('btn-submit', 'n_clicks'),
+        Input('my-date-picker-range', 'start_date'),
+        Input('my-date-picker-range', 'end_date')
     ],
 )
-def update_values_and_charts(crime_type, btn):
+def update_values_and_charts(crime_type, btn, start_date, end_date):
     # apply on each click
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     victims = []
@@ -196,19 +236,20 @@ def update_values_and_charts(crime_type, btn):
     dates = []
 
     if 'btn-submit' in changed_id:
-        crime_merged_table = generated_data(None, None, crime_type)
+        crime_merged_table = generated_data(start_date, end_date, crime_type)
 
-        for type, body, title in zip(crime_merged_table['Type'], crime_merged_table['Body'], crime_merged_table['Title']):
+        for type, body, title in zip(crime_merged_table['Type'], crime_merged_table['Body'],
+                                     crime_merged_table['Title']):
             context = title + " " + body
-            if crime_type == 'ΔΟΛΟΦΟΝΙΑ':   # elastic top verb similarity mixed with POS analysis and NER analysis
+            if crime_type == 'ΔΟΛΟΦΟΝΙΑ':  # elastic top verb similarity mixed with POS analysis and NER analysis
                 columns = ['Date', 'Title', 'Body', 'Type', 'Victim', 'Criminal Status', 'Acts', 'Ages', 'Crime Date']
 
                 article_summary, victim_gender, criminal_status, act, age, date = analyse_victim(context, crime_type)
                 victims.append(victim_gender)
                 c_status.append(criminal_status)
-                acts.append([str(x)+" " for x in act])
-                ages.append([str(x)+" " for x in age])
-                dates.append([str(x)+" " for x in date])
+                acts.append([str(x) + " " for x in act])
+                ages.append([str(x) + " " for x in age])
+                dates.append([str(x) + " " for x in date])
 
         crime_merged_table['Victim'] = victims
         crime_merged_table['Criminal Status'] = c_status
@@ -254,14 +295,14 @@ def toggle_modal(n1, n2, crime_table, is_open):
     if n1 is not None:
         if (n1 and n1['column_id'] == 'Title') or n2:
             return not is_open, (
-                       dbc.ModalHeader("Full Title of Article"),
-                       dbc.ModalBody(children=[
-                               html.Label(html.A(crime_table[n1['row']]['Title']))]
-                               ),
-                       dbc.ModalFooter(
-                           dbc.Button("Close", id="close", className="ml-auto")
-                       ),
-                   )
+                dbc.ModalHeader("Full Title of Article"),
+                dbc.ModalBody(children=[
+                    html.Label(html.A(crime_table[n1['row']]['Title']))]
+                ),
+                dbc.ModalFooter(
+                    dbc.Button("Close", id="close", className="ml-auto")
+                ),
+            )
         elif (n1 and n1['column_id'] == 'Body') or n2:
             return not is_open, (
                 dbc.ModalHeader("Full Body of Article"),

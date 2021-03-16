@@ -1,11 +1,11 @@
+import string
 import spacy
 import regex as re
-from elasticsearchapp.query_results import gather_raw_verbs, get_specific_analyzed, get_latest_raw_data
+from elasticsearchapp.query_results import gather_raw_verbs, get_specific_analyzed
 import nltk
 from NLP.POS.patterns import victim_patterns
 from spacy.matcher import Matcher
 import random
-from Levenshtein import distance
 
 # nltk.download('punkt') # only run once
 nlp = spacy.load('el_core_news_lg')
@@ -15,12 +15,13 @@ random.seed(30)
 matcher = Matcher(nlp.vocab)
 matcher.add("ΘΥΜΑ", victim_patterns)
 
-VERBS_TO_EXCLUDE = ['φέρει', 'υποστήριξη', 'ανέφερε', 'Δείτε', 'ΔΕΙΤΕ']  # 'φέρεται', 'ανέφερε', 'είπαν'
+VERBS_TO_EXCLUDE = ['φέρει', 'υποστήριξη', 'ανέφερε', 'Δείτε', 'ΔΕΙΤΕ', 'γωνία', 'φορές', 'κακούς', 'δηλώσει', 'κανείς',
+                    'ειδικού', 'gr', 'σπιτι', '2018', 'ελενης', 'star', 'δικηγορος', 'βιντεο', 'πηγε', 'λογο', 'πει',
+                    'παει', 'φορά', 'είπαν', 'δήλωση', 'κάνει', 'φαινόνταν']
 
-
-def almost_match(s1, s2):
-    """ catch lemmas like: δολοφονι/δολοφον as a match"""
-    return distance(s1, s2) <= 1
+FEMALE_VICTIMS = ['φοιτήτρια', 'γυναίκα', 'γυναίκ', 'μητέρα', 'κορίτσ', 'φοιτήτ', 'κοπέλ', 'χρονη', 'κόρη', 'οποία']
+MALE_VICTIMS = ['φοιτητή', 'άντρ', 'πατέρα', 'χρονος', 'αγόρ', 'χρονου', 'Πακιστανός', 'Έλληνας', 'τον', 'Αλβανό']
+NEUTRAL_VICTIMS = ['παιδί', 'παιδιά', 'μωρό', 'κόρη', 'χρονο', 'αδελφούλες', 'κοριτσάκ', 'αγοράκ']
 
 
 def most_common(lst):
@@ -31,14 +32,38 @@ def most_common(lst):
 
 
 def custom_NER_analysis(sentence):
+    sentence = sentence.replace('!', '. ').replace(":", '. ').replace(", ", '. ').replace("(", "").replace(")", "")\
+        .replace("-", ". ").replace("–", ". ")
+
     nlp = spacy.load('../NLP/NER/custom_model')
+    nlp.add_pipe(nlp.create_pipe('sentencizer'))  # updated
     doc = nlp(sentence)
 
-    act = [e for e in doc.ents if e.label_ == 'ΠΡΑΞΗ']
-    age = [e for e in doc.ents if e.label_ == 'ΗΛΙΚΙΑ']
+    act = [e.string.strip() for e in doc.ents if e.label_ == 'ΠΡΑΞΗ']
+
+    sentences = [sent.string.strip() for sent in doc.sents for word in sent.string.strip().split(" ") if
+                 word.translate(str.maketrans('', '', string.punctuation)).replace("«", "").replace("»", "") in act]
+
+    age = [e.string.strip() for e in doc.ents if e.label_ == 'ΗΛΙΚΙΑ']
+
+    sentences.extend([sent.string.strip() for sent in doc.sents for word in sent.string.strip().split(" ") if
+                 word.translate(str.maketrans('', '', string.punctuation)).replace("«", "").replace("»", "") in age])
+
     date = [e for e in doc.ents if e.label_ == 'ΗΜΕΡΟΜΗΝΙΑ']
 
-    return act, age, date
+    return act, age, date, sentences
+
+
+def find_verbs(sentences):
+    important_verbs = []
+
+    for sentence in sentences:
+        doc = nlp(sentence)
+        for token in doc:
+            if token.pos_ == "VERB":
+                important_verbs.append(token.text)
+
+    return important_verbs
 
 
 def important_verb_dict_spacy(type, thres):
@@ -66,11 +91,20 @@ def dependency_collector(article, type=None):
     gender = "ΑΓΝΩΣΤΟ"
 
     if type is "person":
+        # 1. text mining scenario
+        matched_female_victims = [female for female in FEMALE_VICTIMS if female in doc.text]
+        matched_male_victims = [male for male in MALE_VICTIMS if male in doc.text]
+        matched_neutral_victims = [child for child in NEUTRAL_VICTIMS if child in doc.text]
+        if matched_female_victims: return "ΓΥΝΑΙΚΑ"
+        if matched_male_victims: return "ΑΝΤΡΑΣ"
+        if matched_neutral_victims: return "ΠΑΙΔΙ"
+
+        # 2. fallback strategy
         for token in doc:
             check = re.findall("Gender=[^|]*", token.tag_)
             # print(token.text, '->', token.pos_, token.dep_, check)
             if not check == []:
-                if (token.pos_ == 'NOUN' and token.dep_ == 'nmod') or (token.pos_ == 'DET' and token.dep_ == 'det') or token.dep_ == 'dobj' or token.dep_ == 'obj' or token.dep_ == 'iobj' or token.dep_ == "nsubj" or token.dep_ == 'nsubj:pass':
+                if token.dep == 'nmod' or token.pos_ == 'DET' or token.dep_ =='iobj':
                     # print(token.text, '---->', token.pos_, token.dep_, check[0].split("=")[1])
                     gender = check[0].split("=")[1]
                 if gender == 'Masc': return "ΑΝΤΡΑΣ"
@@ -97,24 +131,22 @@ def dependency_collector(article, type=None):
                             gender_object.append(re.findall("Gender=[^|]*", token.tag_))
                             object.append(token.text)
 
-                    verb.append(token.text)
-
         return verb, subject, object, gender_subject, gender_object
 
 
 def analyse_victim(raw_data, crime_type):
     """ get victim's gender """
-    # get 1 article based on index given for testing
-    # raw_data, raw_type = get_latest_raw_data(article_index=1, article_type='δολοφονια')  # todo: [1]
     verb, subject, object, gender_subj, gender_obj = dependency_collector(raw_data)
 
-    act, age, date = custom_NER_analysis(raw_data)
+    act, age, date, extra_important_sentence = custom_NER_analysis(raw_data)
+    extra_important_sentence_verbs = find_verbs(extra_important_sentence)
 
     # shorten sentences
-    data = raw_data.replace('!', '. ').replace(":", '. ').replace(", ", '. ').replace("(", "").replace(")", "")
+    data = raw_data.replace('!', '. ').replace(":", '. ').replace(", ", '. ').replace("(", "").replace(")", "")\
+        .replace("-", ". ").replace("–", ". ").replace(";", ". ").replace("...", ". ")
     print("Article:", data)
 
-    verbs_dictionary = important_verb_dict_spacy(crime_type, 130)
+    verbs_dictionary = important_verb_dict_spacy(crime_type, 20)
 
     # all the verbs in the article
     article_verbs = []
@@ -133,40 +165,46 @@ def analyse_victim(raw_data, crime_type):
     # all the verbs in dictionary from elastic
     elastic_dict_verbs = []
     for v in verbs_dictionary:
-        elastic_dict_verbs.append({
-            'raw': v,
-            'analyzed': get_specific_analyzed(v)[0][0]
-        })
+        doc_v = nlp(v)
+        for token in doc_v:
+            if token.pos_ == "VERB":
+                elastic_dict_verbs.append({
+                    'raw': token.text,
+                    'analyzed': get_specific_analyzed(token.text)[0][0]
+                })
 
     # all the matching from the above two
-    matched_verbs = [[v2['raw'] for v1 in elastic_dict_verbs for v2 in article_verbs if (v1['analyzed'] == v2['analyzed'] or almost_match(v1['analyzed'], v2['analyzed']))
-                      and v2['raw'] not in VERBS_TO_EXCLUDE]]
-    print("Elastic and article matching verbs:", set(matched_verbs[0]))
+    matched_verbs = [v2['raw'] for v1 in elastic_dict_verbs for v2 in article_verbs if (v1['analyzed'] == v2['analyzed'])
+                      and v2['raw'] not in VERBS_TO_EXCLUDE]
+    print("Elastic and article matching verbs:", set(matched_verbs))
 
     # break article to sentences and find object and subject only where matched verb is located
     tokens = nltk.sent_tokenize(data)
 
     important_sentences = []
-    for verb in set(matched_verbs[0]):
+    for verb in set(matched_verbs):
         for t in tokens:
             if verb in t:
                 important_sentences.append(t)
-                print("Article (Important) sentence:", t, "___", "verb matched:", verb)
 
-    # POS Pattern matching based on important sentences and based on matching verbs
     victim_genders = []
+    if important_sentences == []:
+        important_sentences.extend(extra_important_sentence)
+        matched_verbs.extend(extra_important_sentence_verbs)
     for sent in important_sentences:
         doc = nlp(sent)
+        print("Important Sentences:", doc)
+        # POS Pattern matching based on important sentences and based on matching verbs
         matches = matcher(doc)
         for match_id, start, end in matches:
             string_id = nlp.vocab.strings[match_id]
             span = doc[start:end]
-            for verb in set(matched_verbs[0]):
+            #for verb in set(matched_verbs):
                 # print("VERB--", verb.lower(), "SPANTEXT--", span.text.lower())
-                if verb.lower() in span.text.lower():
-                    victim_gender = dependency_collector(span.text, type="person")
-                    victim_genders.append(victim_gender)
-                    print(string_id, span.text, "ΘΥΜΑ:", victim_gender)
+                #if verb.lower() in span.text.lower():
+            victim_gender = dependency_collector(span.text, type="person")
+            victim_genders.append(victim_gender)
+            print(string_id, span.text, "ΘΥΜΑ:", victim_gender)
 
     print("[1] ΘΥΜΑ:", most_common(victim_genders))
     print("[2] ΚΑΤΑΣΤΑΣΗ:", status)
@@ -177,10 +215,9 @@ def analyse_victim(raw_data, crime_type):
     return important_sentences, most_common(victim_genders), status, act, age, date
 
 
-# analyse_victim()
+# analyse_victim("ο άντρας χτύπησε την γυναίκα", 'δολοφονια')
 
-# doc = nlp("Υπόθεση δολοφονίας Λίνας Κοεμτζή.")
-# for token in doc:
-#     print(token.text, token.dep_, token.pos_)
+doc = nlp("Μυστήριο με τη δολοφονία Ινδού Τραγική κατάληξη είχε η απαγωγή ενός 44χρονου Ινδού στο Ρέθυμνο")
+for token in doc:
+    print(token.text, token.dep_, token.pos_)
 
-# todo: train a NER for "PERSON" recognition and then apply the above POS on the sentence matching a "PERSON"  (?)

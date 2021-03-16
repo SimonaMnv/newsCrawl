@@ -53,13 +53,18 @@ def get_latest_raw_data(article_index=0, article_type='δολοφονια'):
 
 
 # for dash data
-def get_n_raw_data(crime_type, n):
+def get_n_raw_data(crime_type, from_date, to_date):
 
     url = "http://127.0.0.1:9200/articles/_search"
     total_n_data = []
 
-    payload = "{\r\n  \"size\":" + str(
-        n) + ", \r\n  \"query\": {\r\n    \"match\": {\r\n      \"type\": \"" + crime_type + "\"\r\n    }\r\n  }\r\n}"
+    payload = "{\r\n  \"query\": {\r\n    \"bool\": {\r\n      \"must\": [\r\n        {\r\n      " \
+              "    \"match\": {\r\n            \"type\": \"" + crime_type + "\"\r\n          }\r\n      " \
+              "  },\r\n        {\r\n        \"match\": {\r\n          \"scope\": \"ΕΛΛΑΔΑ\"\r\n      " \
+              "  }\r\n        },\r\n        {\r\n          \"range\": {\r\n            \"date\": {\r\n   " \
+              "           \"gte\": \"" + from_date + "\",\r\n              \"lte\": \"" + to_date + "\"\r\n      " \
+              "      }\r\n          }\r\n        }\r\n      ]\r\n    }\r\n  }\r\n}"
+
     headers = {
         'Content-Type': 'application/json'
     }
