@@ -7,16 +7,8 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 import dash
 import dash_table
-import plotly.graph_objs as go
-from flask import request
-from plotly.graph_objs import Layout
-import dash_daq as daq
-from functools import reduce
-from sklearn import preprocessing
-import numpy as np
-from spacy.lang.lex_attrs import lower
 from NLP.POS.pos import analyse_victim
-from elasticsearchapp.query_results import get_n_raw_data
+from elasticsearchapp.query_results import get_n_raw_data, get_records_per_category
 import plotly.express as px
 
 app = dash.Dash(
@@ -67,125 +59,164 @@ def generate_section_banner(title):
     return html.Div(className="section-banner", children=title)
 
 
-app.layout = html.Div(
-    id="big-app-container",
-    children=[
-        build_banner(),  # this is the top top part
-        dcc.Interval(
-            id="interval-component",
-            interval=2 * 1000,  # in milliseconds
-            n_intervals=50,  # start at batch 50
-            disabled=True,
+def create_card(title, i):
+    records = get_records_per_category()
+
+    card = dbc.Card(
+        dbc.CardBody(
+            [
+                html.H6(title, className="card-title"),
+                html.Br(),
+                html.H3(records[i], className="card-subtitle"),
+            ]
         ),
-        html.Div(id='choices', children=[
-            dcc.DatePickerRange(
-                id='my-date-picker-range',
-                min_date_allowed=date(2012, 1, 1),
-                max_date_allowed=date.today(),
-                initial_visible_month=date.today(),
-                display_format='Y-MM-DD',
-                start_date=date(2012, 1, 1),
-                end_date=date(2012, 12, 12)
-            ),
-        ]),
-        # popup modal
-        dcc.Loading(
-            id="loading-2",
-            type="default",
-            children=[
-                html.Div(
-                    id="modal-div",
-                    children=[
-                        dbc.Modal(
-                            children=[
-                                dbc.ModalFooter(
-                                    dbc.Button("Close", id="close", className="ml-auto")
-                                ),
-                            ],
-                            id="modal"
-                        ),
-                    ]),
-            ]),
+    )
+    return card
+
+
+app.layout = html.Div(
+    children=[
         html.Div(
-            id="app-container",
+            className="left_menu",
             children=[
                 html.Div(
-                    id="news_table",
+                    children=[
+                        create_card("Total Crime Articles", 0),
+                        create_card("Murder Crime Articles", 1),
+                        create_card("Drugs Crime Articles", 2),
+                        create_card("Theft Crime Articles", 3),
+                        create_card("Terrorism Crime Articles", 4),
+                        create_card("Sexual Crime Articles", 5),
+                    ],
+                ),
+            ]
+        ),
+
+        html.Div(
+            className="right_content",
+            children=[
+                build_banner(),  # this is the top top part
+                dcc.Interval(
+                    id="interval-component",
+                    interval=2 * 1000,  # in milliseconds
+                    n_intervals=50,  # start at batch 50
+                    disabled=True,
+                ),
+                html.Div(id='choices', children=[
+                    dcc.DatePickerRange(
+                        id='my-date-picker-range',
+                        min_date_allowed=date(2012, 1, 1),
+                        max_date_allowed=date.today(),
+                        initial_visible_month=date.today(),
+                        display_format='Y-MM-DD',
+                        start_date=date(2012, 1, 1),
+                        end_date=date(2012, 12, 12)
+                    ),
+                ]),
+
+                # popup modal
+                dcc.Loading(
+                    id="loading-2",
+                    color='#36505a',
+                    type="default",
                     children=[
                         html.Div(
-                            id="selector",
+                            id="modal-div",
                             children=[
-                                # drop down menu
-                                generate_section_banner("Filter by Crime Type"),
-                                dcc.Loading(
-                                    id="loading-1",
-                                    type="default",
+                                dbc.Modal(
                                     children=[
-                                        dcc.Dropdown(
-                                            id='crime_type_dd',
-                                            options=[],
-                                            clearable=False,
+                                        dbc.ModalFooter(
+                                            dbc.Button("Close", id="close", className="ml-auto")
                                         ),
-                                    ]),
-                            ]),
-                        dcc.Loading(
-                            id="loading-data",
-                            type="cube",
-                            children=[
-                                html.Div(
-                                    id="fdk-part",
-                                    children=[
-                                        html.Button('Apply Filters', id='btn-submit', n_clicks=0,
-                                                    style=dict(width='100%')),
-                                        generate_section_banner("Results"),
-                                        dash_table.DataTable(
-                                            id='crime_table',
-                                            page_size=10,
-                                            fixed_rows={'headers': True},
-                                            style_table={'overflowY': 'scroll'},
-                                            style_header={
-                                                'backgroundColor': '#314b56',
-                                                'color': 'white',
-                                                'fontWeight': 'bold'
-                                            },
-                                            style_as_list_view=True,
-                                            style_cell={
-                                                'backgroundColor': '#1e2130',
-                                                'color': 'white',
-                                                'textAlign': 'left',
-                                                'padding': '15px',
-                                                'font-family': 'sans-serif',
-                                                'minWidth': '180px', 'width': '180px',
-                                                'maxWidth': '300px',
-                                                'overflow': 'hidden',
-                                                'textOverflow': 'ellipsis',
-                                            },
-                                            style_data_conditional=(),
-                                            css=[{
-                                                'selector': '.dash-table-tooltip',
-                                                'rule': 'background-color: black; font-family: sans-serif;'
-                                            }],
-                                            tooltip_delay=0,
-                                            tooltip_duration=None,
-                                        ),
-                                    ]),
-                                html.Div(
-                                    id="chart-part",
-                                    children=[
-                                        generate_section_banner("Pie-chart Analysis"),
-                                        dcc.Dropdown(
-                                            id='chart_values',
-                                            value='sex',
-                                            options=[{'value': x, 'label': x}
-                                                     for x in ['sex']],
-                                            clearable=False
-                                        ),
-                                        dcc.Graph(id="pie_chart"),
-                                    ], style={"margin-top": "50px", 'display': 'none'}),
+                                    ],
+                                    id="modal"
+                                ),
                             ]),
                     ]),
-            ]),
-    ]
+                html.Div(
+                    id="app-container",
+                    children=[
+                        html.Div(
+                            id="news_table",
+                            children=[
+                                html.Div(
+                                    id="selector",
+                                    children=[
+                                        # drop down menu
+                                        generate_section_banner("Filter by Crime Type"),
+                                        dcc.Loading(
+                                            id="loading-1",
+                                            color='#36505a',
+                                            type="default",
+                                            children=[
+                                                dcc.Dropdown(
+                                                    id='crime_type_dd',
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                            ]),
+                                    ]),
+                                dcc.Loading(
+                                    id="loading-data",
+                                    type="cube",
+                                    color='#36505a',
+                                    children=[
+                                        html.Div(
+                                            id="fdk-part",
+                                            children=[
+                                                html.Button('Apply Filters', id='btn-submit', n_clicks=0,
+                                                            style=dict(width='100%')),
+                                                generate_section_banner("Results"),
+                                                dash_table.DataTable(
+                                                    id='crime_table',
+                                                    page_size=8,
+                                                    fixed_rows={'headers': True},
+                                                    style_table={'overflowY': 'scroll'},
+                                                    style_header={
+                                                        'backgroundColor': '#314b56',
+                                                        'color': 'white',
+                                                        'fontWeight': 'bold'
+                                                    },
+                                                    style_as_list_view=True,
+                                                    style_cell={
+                                                        'backgroundColor': '#1e2130',
+                                                        'color': 'white',
+                                                        'textAlign': 'left',
+                                                        'padding': '15px',
+                                                        'font-family': 'sans-serif',
+                                                        'minWidth': '180px', 'width': '180px',
+                                                        'maxWidth': '450px',
+                                                        'overflow': 'hidden',
+                                                        'textOverflow': 'ellipsis',
+                                                    },
+                                                    style_data_conditional=(),
+                                                    css=[{
+                                                        'selector': '.dash-table-tooltip',
+                                                        'rule': 'background-color: black; font-family: sans-serif;'
+                                                    }],
+                                                    tooltip_delay=0,
+                                                    tooltip_duration=None,
+                                                ),
+                                            ]),
+                                        html.Div(
+                                            id="chart-part",
+                                            children=[
+                                                generate_section_banner("Pie-chart Analysis"),
+                                                dcc.Dropdown(
+                                                    id='chart_values',
+                                                    value='Sex',
+                                                    options=[{'value': x, 'label': x}
+                                                             for x in ['Sex', 'Ages']],
+                                                    clearable=False
+                                                ),
+                                                dcc.Graph(id="pie_chart"),
+                                            ], style={"margin-top": "50px", 'display': 'none'}),
+                                    ]),
+                            ]),
+                    ]),
+            ],
+        ),
+    ],
 )
 
 
@@ -202,15 +233,55 @@ def generate_chart(table_values, chart_values):
     if not table_values:
         return {}, {'display': 'none'}
     else:
-        for data in table_values:
-            values.append(data['Victim'])
+        if chart_values == 'Sex':
+            for data in table_values:
+                values.append(data['Victim'])
 
-        df = pd.DataFrame(data=values, columns=['Victim'])
-        df['frequency'] = df['Victim'].map(df['Victim'].value_counts())
+            df = pd.DataFrame(data=values, columns=['Victim'])
+            df['frequency'] = df['Victim'].map(df['Victim'].value_counts())
 
-        fig = px.pie(df, values=df['frequency'], names=df['Victim'])
+            fig = px.pie(df, values=df['frequency'], names=df['Victim'],
+                         color_discrete_sequence=px.colors.qualitative.T10)
+            fig.update_layout(
+                plot_bgcolor='rgba(49, 75, 86, 1)',
+                paper_bgcolor='rgba(22, 26, 40, 1)',
+                font=dict(
+                    family="sans-serif",
+                    size=13,
+                    color="#ffffff"
+                ),
+            )
 
-        return fig, {'display': 'block'}
+            return fig, {'display': 'block'}
+        elif chart_values == 'Ages':
+            for data in table_values:
+                ages = data['Ages']
+                for age in ages:
+                    values.append(age)
+
+            values = list(map(lambda sub: int(''.join([i for i in sub if i.isnumeric()])), values))  # only numerical
+
+            # converted to age groups
+            ages = pd.DataFrame(values, columns=['age'])
+            bins = [0, 18, 30, 40, 50, 60, 70, 120]
+            labels = ['0-17', '18-29', '30-39', '40-49', '50-59', '60-69', '70+']
+            ages['agerange'] = pd.cut(ages.age, bins, labels=labels, include_lowest=True)
+
+            df = pd.DataFrame(data=ages['agerange'].values, columns=['Ages'])
+            df['frequency'] = ages['agerange'].map(ages['agerange'].value_counts())
+
+            fig = px.pie(df, values=df['frequency'], names=ages['agerange'])
+            fig.update_layout(
+                plot_bgcolor='rgba(49, 75, 86, 1)',
+                paper_bgcolor='rgba(22, 26, 40, 1)',
+                font=dict(
+                    family="sans-serif",
+                    size=13,
+                    color="#ffffff"
+                ),
+            )
+
+            return fig, {'display': 'block'}
 
 
 @app.callback(

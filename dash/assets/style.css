@@ -104,6 +104,9 @@ a {
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, .3);
     background-color: #555;
 }
+#choices{
+    text-align: center;
+}
 
 .DateRangePickerInput__withBorder{
     border: 5px solid #314b56;
@@ -162,3 +165,34 @@ a {
 #btn-submit {
     color: #CACACA;
 }
+
+.right_content{
+ width:80%;
+ position: relative;
+ top: 0;
+ right: -300px;
+ }
+
+.left_menu {
+ width: 15%;
+ position: absolute;
+ top: 0;
+ left: 2px;
+ height: 129%;
+ min-height: 100%;
+ z-index: 999;
+ background: #161a28;
+}
+
+.card{
+    margin: 15px;
+    color: white;
+    background-color: #314b56;
+    opacity: 90%;
+    background-image:
+            linear-gradient(
+                to right,
+                #314b56, #3a5660
+            )
+}
+
