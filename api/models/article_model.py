@@ -20,6 +20,7 @@ class ArticleOfInterest(models.Model):
     victim_gender = models.CharField(max_length=255, null=True, unique=False)
     criminal_status = models.CharField(max_length=255, null=True, unique=False)
     drug_type = models.CharField(max_length=255, null=True, unique=False)
+    person_involved = models.CharField(max_length=255, null=True, unique=False)
 
     def __str__(self):
         return self.title
@@ -36,8 +37,8 @@ class ArticleOfInterest(models.Model):
             'time_of_crime': self.time_of_crime,
             'victim_gender': self.victim_gender,
             'criminal_status': self.criminal_status,
-            'drug_type': self.drug_type
-
+            'drug_type': self.drug_type,
+            'person_involved': self.person_involved
         })
 
         return wrapper

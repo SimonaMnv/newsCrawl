@@ -3,11 +3,11 @@ import pandas as pd
 from dash import no_update
 from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
+import re
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 import dash
 import dash_table
-from NLP.POS.pos import analyse_victim
 from elasticsearchapp.query_results import get_n_raw_data, get_records_per_category
 import plotly.express as px
 
@@ -81,7 +81,7 @@ app.layout = html.Div(
             children=[
                 html.Div(
                     children=[
-                        create_card("Total Crime Articles", 0),
+                        create_card("Total Greek Crime Articles", 0),
                         create_card("Murder Crime Articles", 1),
                         create_card("Drugs Crime Articles", 2),
                         create_card("Theft Crime Articles", 3),
@@ -204,9 +204,9 @@ app.layout = html.Div(
                                                 generate_section_banner("Pie-chart Analysis"),
                                                 dcc.Dropdown(
                                                     id='chart_values',
-                                                    value='Sex',
-                                                    options=[{'value': x, 'label': x}
-                                                             for x in ['Sex', 'Ages']],
+                                                    value='Age Group',
+                                                    # options=[{'value': x, 'label': x}
+                                                    #          for x in ['Age Group', 'Sex']],
                                                     clearable=False
                                                 ),
                                                 dcc.Graph(id="pie_chart"),
@@ -229,6 +229,7 @@ app.layout = html.Div(
     ])
 def generate_chart(table_values, chart_values):
     values = []
+    numeric_values = []
 
     if not table_values:
         return {}, {'display': 'none'}
@@ -251,18 +252,21 @@ def generate_chart(table_values, chart_values):
                     color="#ffffff"
                 ),
             )
-
             return fig, {'display': 'block'}
-        elif chart_values == 'Ages':
+
+        elif chart_values == 'Age Group':
             for data in table_values:
                 ages = data['Ages']
-                for age in ages:
-                    values.append(age)
+                if not ages == "-" and 'χρ' in ages:  # if standalone number, then probably not and age, so disregard
+                    ages = (str(ages).split(","))
+                    for age in ages:
+                        values.append(age)
 
-            values = list(map(lambda sub: int(''.join([i for i in sub if i.isnumeric()])), values))  # only numerical
+            numeric_values.extend([re.findall(r"\d+", value) for value in values])
+            flat_list = [int(item) for sublist in numeric_values for item in sublist]
 
             # converted to age groups
-            ages = pd.DataFrame(values, columns=['age'])
+            ages = pd.DataFrame(flat_list, columns=['age'])
             bins = [0, 18, 30, 40, 50, 60, 70, 120]
             labels = ['0-17', '18-29', '30-39', '40-49', '50-59', '60-69', '70+']
             ages['agerange'] = pd.cut(ages.age, bins, labels=labels, include_lowest=True)
@@ -280,7 +284,26 @@ def generate_chart(table_values, chart_values):
                     color="#ffffff"
                 ),
             )
+            return fig, {'display': 'block'}
 
+        elif chart_values == 'Drug':
+            for data in table_values:
+                values.append(data['Drug'])
+
+            df = pd.DataFrame(data=values, columns=['Drug'])
+            df['frequency'] = df['Drug'].map(df['Drug'].value_counts())
+
+            fig = px.pie(df, values=df['frequency'], names=df['Drug'],
+                         color_discrete_sequence=px.colors.qualitative.T10)
+            fig.update_layout(
+                plot_bgcolor='rgba(49, 75, 86, 1)',
+                paper_bgcolor='rgba(22, 26, 40, 1)',
+                font=dict(
+                    family="sans-serif",
+                    size=13,
+                    color="#ffffff"
+                ),
+            )
             return fig, {'display': 'block'}
 
 
@@ -288,7 +311,8 @@ def generate_chart(table_values, chart_values):
     [
         Output('crime_table', 'data'),
         Output('crime_table', 'columns'),
-        Output('crime_table', 'style_data_conditional')
+        Output('crime_table', 'style_data_conditional'),
+        Output('chart_values', 'options'),
     ],
     [
         Input("crime_type_dd", "value"),
@@ -298,38 +322,39 @@ def generate_chart(table_values, chart_values):
     ],
 )
 def update_values_and_charts(crime_type, btn, start_date, end_date):
-    # apply on each click
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    victims = []
-    c_status = []
-    acts = []
-    ages = []
-    dates = []
+    columns_to_clear = ['Acts', 'Locations', 'Ages', 'Time of Crime']  # clear results and remove {, }, '
+    columns = ['Date', 'Title', 'Body', 'Type', 'Tags', 'Victim', 'Criminal Status', 'Acts',
+               'Locations', 'Ages', 'Time of Crime', 'Drug', 'Link']
 
     if 'btn-submit' in changed_id:
-        crime_merged_table = generated_data(start_date, end_date, crime_type)
+        try:
+            # generate and clear data
+            crime_merged_table = generated_data(start_date, end_date, crime_type)
 
-        for type, body, title in zip(crime_merged_table['Type'], crime_merged_table['Body'],
-                                     crime_merged_table['Title']):
-            context = title + " " + body
-            if crime_type == 'ΔΟΛΟΦΟΝΙΑ':  # elastic top verb similarity mixed with POS analysis and NER analysis
-                columns = ['Date', 'Title', 'Body', 'Type', 'Victim', 'Criminal Status', 'Acts', 'Ages', 'Crime Date']
+            for column in columns_to_clear:
+                crime_merged_table[column].replace('set()', "-", inplace=True)
+                crime_merged_table[column] = ([str(value).replace("{", "").replace("}", "").replace('\'', "")
+                                               for value in crime_merged_table[column].values])
+                if column == 'Time of Crime':
+                    crime_merged_table[column] = ([str(value).replace("[", "").replace("]", "")
+                                                   for value in crime_merged_table[column].values])
+        except KeyError:
+            return no_update, no_update, no_update, no_update
 
-                article_summary, victim_gender, criminal_status, act, age, date = analyse_victim(context, crime_type)
-                victims.append(victim_gender)
-                c_status.append(criminal_status)
-                acts.append([str(x) + " " for x in act])
-                ages.append([str(x) + " " for x in age])
-                dates.append([str(x) + " " for x in date])
-
-        crime_merged_table['Victim'] = victims
-        crime_merged_table['Criminal Status'] = c_status
-        crime_merged_table['Acts'] = acts
-        crime_merged_table['Ages'] = ages
-        crime_merged_table['Crime Date'] = dates
+        # customize columns depending on crime
+        if crime_type == 'ΔΟΛΟΦΟΝΙΑ' or crime_type == 'ΤΡΟΜΟΚΡΑΤΙΚΗ ΕΠΙΘΕΣΗ' or crime_type == 'ΛΗΣΤΕΙΑ'\
+                or crime_type == 'ΣΕΞΟΥΑΛΙΚΟ ΕΓΚΛΗΜΑ':
+            columns = ['Date', 'Title', 'Body', 'Type', 'Tags', 'Victim', 'Criminal Status', 'Acts',
+                       'Locations', 'Ages', 'Time of Crime', 'Link']
+            pie_chart_options = ['Age Group', 'Sex']
+        elif crime_type == 'ΝΑΡΚΩΤΙΚΑ':
+            columns = ['Date', 'Title', 'Body', 'Type', 'Tags', 'Criminal Status', 'Locations', 'Ages',
+                       'Drug', 'Time of Crime', 'Link']
+            pie_chart_options = ['Age Group', 'Drug']
 
         if len(crime_merged_table) == 0:
-            return no_update, no_update, no_update
+            return no_update, no_update, no_update, no_update
 
         data_table = crime_merged_table.to_dict("records")
 
@@ -341,10 +366,10 @@ def update_values_and_charts(crime_type, btn, start_date, end_date):
                     "border": "1px solid blue",
                 }
             ]
-        )
+        ), [{'value': x, 'label': x} for x in pie_chart_options]
 
     else:
-        return [], [], []
+        return [], [], [], []
 
 
 @app.callback(

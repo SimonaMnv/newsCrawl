@@ -2,6 +2,7 @@ import requests
 import re
 import json
 
+
 # for dependency analyze
 def gather_raw_verbs(type, threshold):
     url = "http://127.0.0.1:9200/articles/_search"
@@ -54,7 +55,7 @@ def get_latest_raw_data(article_index=0, article_type='δολοφονια'):
 
 
 # for dash data
-def get_n_raw_data(crime_type, from_date, to_date, threshold=20):   #TODO: change threshold after caching
+def get_n_raw_data(crime_type, from_date, to_date, threshold=20):  # TODO: change threshold after caching
     url = "http://127.0.0.1:9200/articles/_search"
     total_n_data = []
 
@@ -65,7 +66,7 @@ def get_n_raw_data(crime_type, from_date, to_date, threshold=20):   #TODO: chang
                 "must": [
                     {
                         "match": {
-                            "type": "ΔΟΛΟΦΟΝΙΑ"
+                            "type": crime_type
                         }
                     },
                     {
@@ -95,10 +96,19 @@ def get_n_raw_data(crime_type, from_date, to_date, threshold=20):   #TODO: chang
 
     for datum in response['hits']['hits']:
         data = {
-            "Title": datum['_source']['title'],
             "Date": datum['_source']['date'],
+            "Title": datum['_source']['title'],
             "Body": datum['_source']['body'],
             "Type": datum['_source']['type'],
+            "Tags": datum['_source']['tags'],
+            "Victim": datum['_source']['crime_analysis']['victim_gender'],
+            "Criminal Status": datum['_source']['crime_analysis']['criminal_status'],
+            "Acts": datum['_source']['crime_analysis']['acts_committed'],
+            "Locations": datum['_source']['crime_analysis']['location_of_crime'],
+            "Ages": datum['_source']['crime_analysis']['ages_involved'],
+            "Time of Crime": datum['_source']['crime_analysis']['time_of_crime'],
+            "Drug": datum['_source']['crime_analysis']['drug_type'],
+            "Link": "Click for Link"
         }
         total_n_data.append(data)
 
@@ -319,3 +329,24 @@ def get_records_per_category():
     records.append(sex_crime_number)
 
     return records
+
+
+def elastic_greek_stemmer(content):
+    url = "http://127.0.0.1:9200/articles/_analyze"
+
+    stemmed_tokens = []
+
+    payload = json.dumps({
+        "analyzer": "greek_analyzer",
+        "text": content
+    })
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload.encode("utf8")).json()
+    for token in response['tokens']:
+        if len(token['token']) > 2:
+            stemmed_tokens.append(token['token'])
+
+    return stemmed_tokens

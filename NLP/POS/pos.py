@@ -41,9 +41,17 @@ def custom_NER_analysis(sentence):
     sentence = sentence.replace('!', '. ').replace(":", '. ').replace(", ", '. ').replace("(", "").replace(")", "") \
         .replace("-", ". ").replace("–", ". ")
 
-    nlp = spacy.load('../NLP/NER/custom_model')
+    nlp = spacy.load('../../NLP/NER/custom_model')     # custom NER
     nlp.add_pipe(nlp.create_pipe('sentencizer'))  # updated
     doc = nlp(sentence)
+
+    nlp2 = spacy.load('el_core_news_lg')  # the default NER too, for specific person
+    nlp2.add_pipe(nlp2.create_pipe('sentencizer'))  # updated
+    doc2 = nlp2(sentence)
+
+    specific_person = [e.string.strip() for e in doc2.ents if e.label_ == 'PERSON']
+
+    location = [e.string.strip() for e in doc2.ents if e.label_ == 'GPE']
 
     act = [e.string.strip() for e in doc.ents if e.label_ == 'ΠΡΑΞΗ']
 
@@ -58,7 +66,7 @@ def custom_NER_analysis(sentence):
 
     date = [e for e in doc.ents if e.label_ == 'ΗΜΕΡΟΜΗΝΙΑ']
 
-    return remove_similar(act), remove_similar(age), date, sentences
+    return remove_similar(act), remove_similar(age), date, sentences, remove_similar(specific_person), remove_similar(location)
 
 
 def find_verbs(sentences):
@@ -148,7 +156,7 @@ def analyse_victim(raw_data, crime_type):
     """ get victim's gender """
     verb, subject, object, gender_subj, gender_obj = dependency_collector(raw_data)
 
-    act, age, date, extra_important_sentence = custom_NER_analysis(raw_data)
+    act, age, date, extra_important_sentence, specific_person, location = custom_NER_analysis(raw_data)
     extra_important_sentence_verbs = find_verbs(extra_important_sentence)
 
     # shorten sentences
@@ -169,7 +177,7 @@ def analyse_victim(raw_data, crime_type):
             })
             if 'ομολόγ' in v or 'ομολογ' in v:
                 status = "ΟΜΟΛΟΓΗΣΕ"
-            if 'συνελήφθη' in v or 'φυλακίστηκε' in v or 'συλληφθεί' in v:
+            if 'συνελήφθη' in v or 'φυλακίστηκε' in v or 'συλληφθεί' in v or 'συνέλαβαν' in v:
                 status = "ΣΥΝΕΛΗΦΘΗ"
 
     # all the verbs in dictionary from elastic
@@ -222,8 +230,10 @@ def analyse_victim(raw_data, crime_type):
     print("[3] ΠΡΑΞΕΙΣ:", act)
     print("[4] ΗΛΙΚΙΕΣ:", age)
     print("[5] ΗΜΕΡΟΜΗΝΙΑ:", date)
+    print("[6] ΠΡΟΣΩΠΑ:", specific_person)
+    print("[5] ΤΟΠΟΘΕΣΙΑ:", location)
 
-    return important_sentences, most_common(victim_genders), status, act, age, date
+    return important_sentences, most_common(victim_genders), status, act, age, date, specific_person, location
 
 
 # analyse_victim("ο άντρας χτύπησε την γυναίκα", 'δολοφονια')
