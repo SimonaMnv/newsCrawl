@@ -10,6 +10,7 @@ import dash
 import dash_table
 from elasticsearchapp.query_results import get_n_raw_data, get_records_per_category
 import plotly.express as px
+import plotly.graph_objects as go
 
 app = dash.Dash(
     __name__,
@@ -74,6 +75,28 @@ def create_card(title, i):
     return card
 
 
+def crime_map():
+    greek_cities = pd.read_csv("../NLP/POS/gr.csv")
+
+    fig = go.Figure(px.scatter_mapbox(greek_cities, lat="lat", lon="lng", hover_name="city",
+                                      color_discrete_sequence=["red"], zoom=5, height=450))
+    fig.update_layout(
+        mapbox_style="white-bg",
+        mapbox_layers=[
+            {
+                "below": 'traces',
+                "sourcetype": "raster",
+                "sourceattribution": "United States Geological Survey",
+                "source": [
+                    "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
+                ]
+            }
+        ])
+    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+
+    return dcc.Graph(id="map_chart", figure=fig)
+
+
 app.layout = html.Div(
     children=[
         html.Div(
@@ -81,12 +104,13 @@ app.layout = html.Div(
             children=[
                 html.Div(
                     children=[
-                        create_card("Total Greek Crime Articles", 0),
-                        create_card("Murder Crime Articles", 1),
-                        create_card("Drugs Crime Articles", 2),
-                        create_card("Theft Crime Articles", 3),
-                        create_card("Terrorism Crime Articles", 4),
-                        create_card("Sexual Crime Articles", 5),
+                        create_card("Global Crime Articles", 0),
+                        create_card("Greek Crime Articles", 1),
+                        create_card("Murder Crime Articles", 2),
+                        create_card("Drugs Crime Articles", 3),
+                        create_card("Theft Crime Articles", 4),
+                        create_card("Terrorism Crime Articles", 5),
+                        create_card("Sexual Crime Articles", 6),
                     ],
                 ),
             ]
@@ -113,7 +137,6 @@ app.layout = html.Div(
                         end_date=date(2012, 12, 12)
                     ),
                 ]),
-
                 # popup modal
                 dcc.Loading(
                     id="loading-2",
@@ -199,18 +222,31 @@ app.layout = html.Div(
                                                 ),
                                             ]),
                                         html.Div(
-                                            id="chart-part",
+                                            id="map-chart-part",
                                             children=[
-                                                generate_section_banner("Pie-chart Analysis"),
-                                                dcc.Dropdown(
-                                                    id='chart_values',
-                                                    value='Age Group',
-                                                    # options=[{'value': x, 'label': x}
-                                                    #          for x in ['Age Group', 'Sex']],
-                                                    clearable=False
-                                                ),
-                                                dcc.Graph(id="pie_chart"),
-                                            ], style={"margin-top": "50px", 'display': 'none'}),
+                                                html.Div(
+                                                    children=[
+                                                        generate_section_banner("Pie-chart Analysis"),
+                                                        dcc.Dropdown(
+                                                            id='chart_values',
+                                                            value='Age Group',
+                                                            clearable=False
+                                                        ),
+                                                        dcc.Graph(id='pie_chart',
+                                                                  figure={
+                                                                      "layout": {
+                                                                          "height": 405,  # px
+                                                                      },
+                                                                  },
+                                                                  ),
+                                                    ], className="six columns"),
+
+                                                html.Div(
+                                                    children=[
+                                                        generate_section_banner("Greek Map Analysis"),
+                                                        crime_map(),
+                                                    ], className="six columns"),
+                                            ], style={'display': 'none'}),
                                     ]),
                             ]),
                     ]),
@@ -222,7 +258,7 @@ app.layout = html.Div(
 
 @app.callback(
     Output("pie_chart", "figure"),
-    Output("chart-part", "style"),
+    Output("map-chart-part", "style"),
     [
         Input('crime_table', 'data'),
         Input('chart_values', 'value'),
@@ -252,7 +288,7 @@ def generate_chart(table_values, chart_values):
                     color="#ffffff"
                 ),
             )
-            return fig, {'display': 'block'}
+            return fig, {'width': "100%", 'display': 'inline-block'}
 
         elif chart_values == 'Age Group':
             for data in table_values:
@@ -284,7 +320,7 @@ def generate_chart(table_values, chart_values):
                     color="#ffffff"
                 ),
             )
-            return fig, {'display': 'block'}
+            return fig, {'width': "100%", 'display': 'inline-block'}
 
         elif chart_values == 'Drug':
             for data in table_values:
@@ -304,7 +340,7 @@ def generate_chart(table_values, chart_values):
                     color="#ffffff"
                 ),
             )
-            return fig, {'display': 'block'}
+            return fig, {'width': "100%", 'display': 'inline-block'}
 
 
 @app.callback(
@@ -343,7 +379,7 @@ def update_values_and_charts(crime_type, btn, start_date, end_date):
             return no_update, no_update, no_update, no_update
 
         # customize columns depending on crime
-        if crime_type == 'ΔΟΛΟΦΟΝΙΑ' or crime_type == 'ΤΡΟΜΟΚΡΑΤΙΚΗ ΕΠΙΘΕΣΗ' or crime_type == 'ΛΗΣΤΕΙΑ'\
+        if crime_type == 'ΔΟΛΟΦΟΝΙΑ' or crime_type == 'ΤΡΟΜΟΚΡΑΤΙΚΗ ΕΠΙΘΕΣΗ' or crime_type == 'ΛΗΣΤΕΙΑ' \
                 or crime_type == 'ΣΕΞΟΥΑΛΙΚΟ ΕΓΚΛΗΜΑ':
             columns = ['Date', 'Title', 'Body', 'Type', 'Tags', 'Victim', 'Criminal Status', 'Acts',
                        'Locations', 'Ages', 'Time of Crime', 'Link']

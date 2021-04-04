@@ -207,6 +207,23 @@ def get_records_per_category():
                 "must": [
                     {
                         "match": {
+                            "scope": "ΚΟΣΜΟΣ"
+                        }
+                    }
+                ]
+            }
+        }
+    })
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
+    total_crime_articles_global = response.json()['hits']['total']['value']
+    records.append(total_crime_articles_global)
+
+    payload = json.dumps({
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
                             "scope": "ΕΛΛΑΔΑ"
                         }
                     }
