@@ -75,7 +75,7 @@ Elastic has a built-in TF-IDF (https://sci2lab.github.io/ml_tutorial/tfidf/) whi
 3. For the "acts", "age", "date", a custom-trained NER model is used. The model can be located in ```ML/NER/custom_model``` and is trained on ~50 articles by using a NER annotator tool (https://github.com/ManivannanMurugavel/spacy-ner-annotator). Further annotation is required for accuracy improvement
 4. For the "location", SpaCy's greek NER is used
 
-### Crime Analysis
+### UI
 
 For the UI, plotly's dash (runs on flask) is deployed. The crime dash in ```dash/crime_dash.py``` uses elastic's api calls to retrieve the analyzed data. 
 click to see a preview: https://user-images.githubusercontent.com/59322298/114617279-9f8e1c80-9cb0-11eb-9edf-71c4829cb41a.mp4
