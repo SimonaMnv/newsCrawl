@@ -8,6 +8,7 @@
 * [Crawling Layer](#crawling-layer)
 * [Classifying Layer](#classifying-layer)
 * [Crime Analysis](#crime-analysis)
+* [UI](#ui)
 
 ## General info
 
@@ -15,6 +16,7 @@ Greek Crime Analyzer is a project that consists of:
 1. Crawling and storing greek crime articles in MongoDB
 2. Classifying them to a crime type using SVM classifier [custom-trained model, adaptable]
 3. Analyzing them using machine learning (NLP) and elastic custom analyzers to create additional json fields to the final analysis.
+4. UI with all the articles available and their text analysis, pie charts, a map with crime-coordinate locations
 
 ## Technologies
 
@@ -72,3 +74,10 @@ Elastic has a built-in TF-IDF (https://sci2lab.github.io/ml_tutorial/tfidf/) whi
 2. For the "crime status", simply, text mining is used
 3. For the "acts", "age", "date", a custom-trained NER model is used. The model can be located in ```ML/NER/custom_model``` and is trained on ~50 articles by using a NER annotator tool (https://github.com/ManivannanMurugavel/spacy-ner-annotator). Further annotation is required for accuracy improvement
 4. For the "location", SpaCy's greek NER is used
+
+### Crime Analysis
+
+For the UI, plotly's dash (runs on flask) is deployed. The crime dash in ```dash/crime_dash.py``` uses elastic's api calls to retrieve the analyzed data. A snapshot is seen below
+
+https://user-images.githubusercontent.com/59322298/114616795-f8a98080-9caf-11eb-92e6-eee038223ba0.mp4
+
