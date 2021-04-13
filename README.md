@@ -7,7 +7,7 @@
 * [Database Model](#database-model)
 * [Crawling Layer](#crawling-layer)
 * [Classifying Layer](#classifying-layer)
-* [Crime Analysis](#crime-analysis)
+* [Analysis Layer](#analysis-layer)
 * [UI](#ui)
 
 ## General info
@@ -57,7 +57,7 @@ An example of 1 elastic article record (after the crime-analysis process) can be
 This layer is used to classify an article and categorize it in one of the following categories: murder, drugs, theft, sexual crime, terrorism. This layer is enabled, in combination with the analysis layer, when a new article is crawled.
 The classifier is custom-trained by using greek crime articles that had available "tags" by the article's author. Tags that implied a crime type were text mined to create a custom annotated dataset. The classifier with a UI can also be found as a standalone project: https://github.com/SimonaMnv/ArachneClassifier
 
-## Crime Analysis
+## Analysis Layer
 
 For the analysis of the text two methods were deployed:
 1. NLP (Spacy, NLTK e.t.c)
