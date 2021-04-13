@@ -1,5 +1,6 @@
 import requests
 import re
+import json
 
 
 # for dependency analyze
@@ -7,11 +8,12 @@ def gather_raw_verbs(type, threshold):
     url = "http://127.0.0.1:9200/articles/_search"
     keyword = []
 
-    payload = "{\r\n  \"size\":0, \r\n  \"query\": {\r\n    \"match\": {\r\n      \"type\": \""+ type +"\"\r\n   " \
-                                                                                                       " }\r\n " \
-              " },\r\n  \"aggregations\":{\r\n    \"NAME\":{\r\n      \"significant_text\": {\r\n       " \
-              " \"field\": \"body.simple_analyzer\",\r\n        \"size\": " +str(threshold) + "\r\n      }\r\n   " \
-                                                                                              " }\r\n  }\r\n}"
+    payload = "{\r\n  \"size\":0, \r\n  \"query\": {\r\n    \"match\": {\r\n      \"type\": \"" + type + "\"\r\n   " \
+             " }\r\n " \
+             " },\r\n  \"aggregations\":{\r\n    \"NAME\":{\r\n      \"significant_text\": {\r\n       " \
+             " \"field\": \"body.simple_analyzer\",\r\n        \"size\": " + str(
+        threshold) + "\r\n      }\r\n   " \
+                     " }\r\n  }\r\n}"
     headers = {
         'Content-Type': 'application/json'
     }
@@ -35,7 +37,7 @@ def get_latest_raw_data(article_index=0, article_type='δολοφονια'):
 
     payload = "{\r\n  \"track_total_hits\": true, \r\n    \"size\": 1000,\r\n    \"query\": {\r\n        " \
               "\"term\": {\r\n            \"type\": {\r\n                \"value\": \"" + article_type + "\"\r\n         " \
-                                                                                                         "   }\r\n        }\r\n    }\r\n}"
+             "   }\r\n        }\r\n    }\r\n}"
 
     headers = {
         'Content-Type': 'application/json'
@@ -53,13 +55,38 @@ def get_latest_raw_data(article_index=0, article_type='δολοφονια'):
 
 
 # for dash data
-def get_n_raw_data(crime_type, n):
-
+def get_n_raw_data(crime_type, from_date, to_date, threshold=20):  # TODO: change threshold after caching
     url = "http://127.0.0.1:9200/articles/_search"
     total_n_data = []
 
-    payload = "{\r\n  \"size\":" + str(
-        n) + ", \r\n  \"query\": {\r\n    \"match\": {\r\n      \"type\": \"" + crime_type + "\"\r\n    }\r\n  }\r\n}"
+    payload = json.dumps({
+        "size": threshold,
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "type": crime_type
+                        }
+                    },
+                    {
+                        "match": {
+                            "scope": "ΕΛΛΑΔΑ"
+                        }
+                    },
+                    {
+                        "range": {
+                            "date": {
+                                "gte": from_date,
+                                "lte": to_date
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    })
+
     headers = {
         'Content-Type': 'application/json'
     }
@@ -69,10 +96,19 @@ def get_n_raw_data(crime_type, n):
 
     for datum in response['hits']['hits']:
         data = {
-            "Title": datum['_source']['title'],
             "Date": datum['_source']['date'],
+            "Title": datum['_source']['title'],
             "Body": datum['_source']['body'],
             "Type": datum['_source']['type'],
+            "Tags": datum['_source']['tags'],
+            "Victim": datum['_source']['crime_analysis']['victim_gender'],
+            "Criminal Status": datum['_source']['crime_analysis']['criminal_status'],
+            "Acts": datum['_source']['crime_analysis']['acts_committed'],
+            "Locations": datum['_source']['crime_analysis']['location_of_crime'],
+            "Ages": datum['_source']['crime_analysis']['ages_involved'],
+            "Time of Crime": datum['_source']['crime_analysis']['time_of_crime'],
+            "Drug": datum['_source']['crime_analysis']['drug_type'],
+            "Link": "Click for Link"
         }
         total_n_data.append(data)
 
@@ -158,49 +194,176 @@ def get_specific_analyzed(specific_text):
     return tokenized_data
 
 
-# test
-specific_text = "Εμπόριο βρεφών στη Θεσσαλονίκη: Ποιους φακέλους ξεσκονίζει η ΕΛ.ΑΣ. Έρευνα για υποθέσεις που " \
-                "σχετίζονται με εμπόριο βρεφών ξεκίνησε η Ασφάλεια Θεσσαλονίκης, ύστερα από την παραγγελία " \
-                "προκαταρκτικής εξέτασης από την Εισαγγελία Πρωτοδικών Θεσσαλονίκης, με φόντο τις σοβαρές καταγγελίες " \
-                "γυναικών από την Αλβανία για κυκλώματα με έδρα την Ελλάδα. Όλα ξεκίνησαν από μία διπλή δολοφονία στα " \
-                "Τίρανα. Εκεί την παραμονή της Πρωτοχρονιάς ένας 59χρονος εκτέλεσε δύο αδερφές, με τις οποίες είχε " \
-                "στο παρελθόν ερωτική σχέση. Οι συγγενείς των θυμάτων κατήγγειλαν μετά το έγκλημα στις αλβανικές " \
-                "Αρχές ότι ο δράστης εξέδιδε τα δύο θύματα στη Θεσσαλονίκη, τα ανάγκαζε σε κυοφορία και ακολούθως " \
-                "πουλούσε τα βρέφη σε άτεκνα ζευγάρια, με τη βοήθεια Έλληνα δικηγόρου από τη βόρεια Ελλάδα.Η Ασφάλεια " \
-                "Θεσσαλονίκης έχει ζητήσει μέσω Ιντερπόλ από τις αλβανικές Αρχές το φάκελο με τις σοβαρές καταγγελίες " \
-                "για αγοραπωλησίες βρεφών. Από τη μέχρι στιγμής έρευνα προκύπτει ότι τα δύο θύματα είχαν συλληφθεί το " \
-                "1992 και το 2003 σε Θεσσαλονίκη και Αθήνα για το νόμο περί αλλοδαπών και εκδιδόμενων προσώπων. Οι " \
-                "δύο γυναίκες που δολοφονήθηκαν προσπαθούσαν να ξεφύγουν από τον 59χρονο, ο οποίος τις απειλούσε και " \
-                "τις ζήλευε. Η Ελληνική Αστυνομία θα προχωρήσει από εδώ και πέρα στις παρακάτω ενέργειες: Αρχικά θα " \
-                "διασταυρώσει εάν με τα ονόματα των δύο αδελφών που δολοφονήθηκαν είχαν γίνει νομιμοφανείς υιοθεσίες " \
-                "στη χώρα μας. Αστυνομικές πηγές εξηγούν ότι σε πολλές περιπτώσεις οι διαδικασίες υιοθεσιών φαίνονται " \
-                "απολύτως νόμιμες, χωρίς κανείς να γνωρίζει ότι πίσω από αυτές κρύβονται βιασμοί, αναγκαστικές " \
-                "κυοφορίες και θύματα μαστροπείας. Τα κυκλώματα εκμεταλλεύονται ευάλωτες γυναίκες, οι οποίες δεν " \
-                "προσφεύγουν στις Αρχές. Όπως δηλαδή ακριβώς έγινε και με την περίπτωση των δύο αδελφών από τα " \
-                "Τίρανα. Η αλβανική Αστυνομία ενημερώθηκε για τη δράση του 59χρονου αφού είχε γίνει πρώτα το κακό. Οι " \
-                "αστυνομικοί θα διασταυρώσουν λοιπόν εάν έγιναν υιοθεσίες, στις οποίες να εμφανίζονται ως μητέρες τα " \
-                "δύο θύματα, ενώ ιδιαίτερη προσοχή θα δοθεί σε περιπτώσεις στις οποίες μπορεί να χρησιμοποιήθηκαν " \
-                "πλαστά έγγραφα. Το δεύτερο αντικείμενο της έρευνας της ΕΛ.ΑΣ. είναι η έρευνα για τη δράση του " \
-                "δικηγόρου. Οι αστυνομικοί θα πάρουν στα χέρια τους το όνομα του Έλληνα δικηγόρου που φέρεται (όπως " \
-                "προκύπτει από τις καταγγελίες των συγγενών των θυμάτων) να μεσολαβούσε για τον εντοπισμό αγοραστών " \
-                "για τα βρέφη. Το όνομα του δικηγόρου (είτε αυτός βρίσκεται εν ζωή είτε όχι) θα ξεκλειδώσει τις " \
-                "έρευνες. Στο παρελθόν η Ασφάλεια Θεσσαλονίκης έχει χειριστεί ξανά υποθέσεις με αγοραπωλησίες βρεφών. " \
-                "Στις υποθέσεις αυτές είχαν εμπλοκή δικηγόροι, ενώ τα κυκλώματα είχαν «πλοκάμια» στη γειτονική " \
-                "Βουλγαρία. Οι γέννες γίνονταν σε μαιευτήρια στη χώρα μας, οι μητέρες κρατούσαν για λίγες ημέρες τα " \
-                "νεογνά και κατόπιν τα παρέδιδαν στους αγοραστές που πλήρωναν αδρά.Οι εγκληματικές οργανώσεις " \
-                "εκμεταλλεύονταν την ανάγκη άτεκνων ζευγαριών να υιοθετήσουν ένα παιδί αλλά και τις αυστηρές " \
-                "προϋποθέσεις που έθετε ο νόμος για τη διαδικασία. Σημειώνεται ότι η παρέμβαση της Εισαγγελίας " \
-                "Πρωτοδικών Θεσσαλονίκης έγινε κατόπιν δημοσιευμάτων με καταγγελίες συγγενών των θυμάτων σε αλβανικά " \
-                "μέσα ενημέρωσης, σύμφωνα με τις οποίες ο δράστης, που συνελήφθη και κρατείται, εξέδιδε τις δύο " \
-                "αδελφές, τις υποχρέωνε να τεκνοποιούν και στη συνέχεια να πουλούν τα βρέφη τους στην χώρα μας. Όπως " \
-                "έγινε γνωστό, ο προϊστάμενος της Εισαγγελίας Πρωτοδικών Θεσσαλονίκης, Παναγιώτης Παναγιωτόπουλος, " \
-                "παρήγγειλε την έρευνα στην Ασφάλεια Θεσσαλονίκης, ώστε να διαλευκανθούν οι καταγγελίες περί " \
-                "παράνομων υιοθεσιών κι αν υπάρχει εμπλοκή οργανωμένου κυκλώματος. Κατά τις ίδιες καταγγελίες, " \
-                "πάνω από δέκα παιδιά γεννήθηκαν σε ελληνικά μαιευτήρια και πωλήθηκαν έναντι αμοιβής με τη βοήθεια " \
-                "δικηγόρου που δεν βρίσκεται εν ζωή.Το διπλό φονικό αποκαλύφθηκε την παραμονή της Πρωτοχρονιάς στα " \
-                "Τίρανα, όπου οι άτυχες γυναίκες έπεσαν νεκρές από πυρά του 59χρονου, ο οποίος συνελήφθη και " \
-                "απολογούμενος προανακριτικά ισχυρίστηκε ότι το κίνητρο της αποτρόπαιης πράξης ήταν η τυφλή ζήλια. "
-specific_text.replace('\n', '').replace('\r', '').replace("\\", '').replace('"', "") \
-    .replace("\b", '').replace("\t", '').replace("\f", '')
+def get_records_per_category():
+    records = []
+    url = "http://127.0.0.1:9200/articles/_search"
+    headers = {
+        'Content-Type': 'application/json'
+    }
 
-# print(get_specific_analyzed(specific_text))
+    payload = json.dumps({
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "scope": "ΚΟΣΜΟΣ"
+                        }
+                    }
+                ]
+            }
+        }
+    })
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
+    total_crime_articles_global = response.json()['hits']['total']['value']
+    records.append(total_crime_articles_global)
+
+    payload = json.dumps({
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "scope": "ΕΛΛΑΔΑ"
+                        }
+                    }
+                ]
+            }
+        }
+    })
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
+    total_crime_articles = response.json()['hits']['total']['value']
+    records.append(total_crime_articles)
+
+    payload = json.dumps({
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "type": "ΔΟΛΟΦΟΝΙΑ"
+                        }
+                    },
+                    {
+                        "match": {
+                            "scope": "ΕΛΛΑΔΑ"
+                        }
+                    }
+                ]
+            }
+        }
+    })
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
+    murder_crime_number = response.json()['hits']['total']['value']
+    records.append(murder_crime_number)
+
+    payload = json.dumps({
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "type": "ΝΑΡΚΩΤΙΚΑ"
+                        }
+                    },
+                    {
+                        "match": {
+                            "scope": "ΕΛΛΑΔΑ"
+                        }
+                    }
+                ]
+            }
+        }
+    })
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
+    drugs_crime_number = response.json()['hits']['total']['value']
+    records.append(drugs_crime_number)
+
+    payload = json.dumps({
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "type": "ΛΗΣΤΕΙΑ/ΚΛΟΠΗ"
+                        }
+                    },
+                    {
+                        "match": {
+                            "scope": "ΕΛΛΑΔΑ"
+                        }
+                    }
+                ]
+            }
+        }
+    })
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
+    theft_crime_number = response.json()['hits']['total']['value']
+    records.append(theft_crime_number)
+
+    payload = json.dumps({
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "type": "ΤΡΟΜΟΚΡΑΤΙΚΗ ΕΠΙΘΕΣΗ"
+                        }
+                    },
+                    {
+                        "match": {
+                            "scope": "ΕΛΛΑΔΑ"
+                        }
+                    }
+                ]
+            }
+        }
+    })
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
+    terrorism_crime_number = response.json()['hits']['total']['value']
+    records.append(terrorism_crime_number)
+
+    payload = json.dumps({
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "type": "ΣΕΞΟΥΑΛΙΚΟ ΕΓΚΛΗΜΑ"
+                        }
+                    },
+                    {
+                        "match": {
+                            "scope": "ΕΛΛΑΔΑ"
+                        }
+                    }
+                ]
+            }
+        }
+    })
+    response = requests.request("GET", url, headers=headers, data=payload.encode("utf8"))
+    sex_crime_number = response.json()['hits']['total']['value']
+    records.append(sex_crime_number)
+
+    return records
+
+
+def elastic_greek_stemmer(content):
+    url = "http://127.0.0.1:9200/articles/_analyze"
+
+    stemmed_tokens = []
+
+    payload = json.dumps({
+        "analyzer": "greek_analyzer",
+        "text": content
+    })
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload.encode("utf8")).json()
+    for token in response['tokens']:
+        if len(token['token']) > 2:
+            stemmed_tokens.append(token['token'])
+
+    return stemmed_tokens
