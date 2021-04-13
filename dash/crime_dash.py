@@ -76,7 +76,7 @@ def create_card(title, i):
 
 
 def crime_map():
-    greek_cities = pd.read_csv("../NLP/POS/gr.csv")
+    greek_cities = pd.read_csv("../ML/POS/gr.csv")
 
     fig = go.Figure(px.scatter_mapbox(greek_cities, lat="lat", lon="lng", hover_name="city",
                                       color_discrete_sequence=["red"], zoom=5, height=450))

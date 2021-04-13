@@ -3,10 +3,9 @@ import spacy
 import regex as re
 from elasticsearchapp.query_results import gather_raw_verbs, get_specific_analyzed
 import nltk
-from NLP.POS.patterns import victim_patterns
+from ML.POS.patterns import victim_patterns
 from spacy.matcher import Matcher
 import random
-import unicodedata as ud
 
 # nltk.download('punkt') # only run once
 nlp = spacy.load('el_core_news_lg')
@@ -41,7 +40,7 @@ def custom_NER_analysis(sentence):
     sentence = sentence.replace('!', '. ').replace(":", '. ').replace(", ", '. ').replace("(", "").replace(")", "") \
         .replace("-", ". ").replace("–", ". ")
 
-    nlp = spacy.load('../../NLP/NER/custom_model')     # custom NER
+    nlp = spacy.load('../../ML/NER/custom_model')     # custom NER
     nlp.add_pipe(nlp.create_pipe('sentencizer'))  # updated
     doc = nlp(sentence)
 

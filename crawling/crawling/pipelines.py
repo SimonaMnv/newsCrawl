@@ -2,8 +2,8 @@ from bson.objectid import ObjectId
 from api.models.article_model import ArticleOfInterest
 import re
 import hashlib
-from NLP.POS.pos import analyse_victim
-from NLP.classification.ML_classification import classify_crime_type
+from ML.POS.pos import analyse_victim
+from ML.classification.ML_classification import classify_crime_type
 
 drugs_list = ['Μαριχουάνα', 'Χασίς', 'Κοκαΐνη', 'Ηρωίνη', 'Μορφίνη', 'LSD', 'STP', 'Βαρβιτουρικά',
               'κάνναβη', 'Αμφεταμίνες', 'Αμφεταμίνη', 'Κεταμίνη', 'Μεθαμφεταμίνη', 'Rohypnol', 'Κρακ',
@@ -27,7 +27,7 @@ class DjangoPipeline(object):
 
         hashed_id = hashlib.md5(item["link"].encode()).hexdigest()
 
-        # run the NLP, POS, Elastic analysis on the title+body
+        # run the ML, POS, Elastic analysis on the title+body
         content = item["title"] + min(final_body, key=len)
         article_summary, victim_gender, criminal_status, act, age, date, specific_person, location = analyse_victim(
             content, item["type"])
