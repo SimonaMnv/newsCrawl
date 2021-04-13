@@ -38,7 +38,7 @@ The database model follows a noSQL schema can be found in ```api/models/article_
 Diagram of the schema:
 ![mongodb](https://user-images.githubusercontent.com/59322298/114606705-46b88700-9ca4-11eb-9c64-557481f09c4e.PNG)
 
-### Crawling Layer
+## Crawling Layer
 
 For the crawling layer, scrapy is deployed. The spider can be found in ```crawling/spiders/newsbomb_spider.py```
 The spider's tasks are:
@@ -52,12 +52,12 @@ After the crawling is over, we synchronize the mongoDB with the elastic database
 An example of 1 elastic article record (after the crime-analysis process) can be seen below:
 ![elastic](https://user-images.githubusercontent.com/59322298/114608742-ac0d7780-9ca6-11eb-83b4-65445da93177.PNG)
 
-### Classifying Layer
+## Classifying Layer
 
 This layer is used to classify an article and categorize it in one of the following categories: murder, drugs, theft, sexual crime, terrorism. This layer is enabled, in combination with the analysis layer, when a new article is crawled.
 The classifier is custom-trained by using greek crime articles that had available "tags" by the article's author. Tags that implied a crime type were text mined to create a custom annotated dataset. The classifier with a UI can also be found as a standalone project: https://github.com/SimonaMnv/ArachneClassifier
 
-### Crime Analysis
+## Crime Analysis
 
 For the analysis of the text two methods were deployed:
 1. NLP (Spacy, NLTK e.t.c)
@@ -75,7 +75,7 @@ Elastic has a built-in TF-IDF (https://sci2lab.github.io/ml_tutorial/tfidf/) whi
 3. For the "acts", "age", "date", a custom-trained NER model is used. The model can be located in ```ML/NER/custom_model``` and is trained on ~50 articles by using a NER annotator tool (https://github.com/ManivannanMurugavel/spacy-ner-annotator). Further annotation is required for accuracy improvement
 4. For the "location", SpaCy's greek NER is used
 
-### UI
+## UI
 
 For the UI, plotly's dash (runs on flask) is deployed. The crime dash in ```dash/crime_dash.py``` uses elastic's api calls to retrieve the analyzed data. 
 click to see a preview: https://user-images.githubusercontent.com/59322298/114617279-9f8e1c80-9cb0-11eb-9edf-71c4829cb41a.mp4
