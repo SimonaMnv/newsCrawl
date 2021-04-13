@@ -77,7 +77,6 @@ Elastic has a built-in TF-IDF (https://sci2lab.github.io/ml_tutorial/tfidf/) whi
 
 ### Crime Analysis
 
-For the UI, plotly's dash (runs on flask) is deployed. The crime dash in ```dash/crime_dash.py``` uses elastic's api calls to retrieve the analyzed data. A snapshot is seen below
-
-https://user-images.githubusercontent.com/59322298/114616795-f8a98080-9caf-11eb-92e6-eee038223ba0.mp4
+For the UI, plotly's dash (runs on flask) is deployed. The crime dash in ```dash/crime_dash.py``` uses elastic's api calls to retrieve the analyzed data. 
+click to see a preview: https://user-images.githubusercontent.com/59322298/114617279-9f8e1c80-9cb0-11eb-9edf-71c4829cb41a.mp4
 
