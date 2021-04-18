@@ -1,6 +1,7 @@
 from bson.objectid import ObjectId
 from api.models.article_model import ArticleOfInterest
 import re
+from twisted.internet.threads import deferToThread
 import hashlib
 from ML.POS.pos import analyse_victim
 from ML.classification.ML_classification import classify_crime_type
@@ -14,6 +15,9 @@ class DjangoPipeline(object):
     collection_name = 'scrapy_articles'
 
     def process_item(self, item, spider):
+        return deferToThread(self._process_item, item, spider)
+
+    def _process_item(self, item, spider):
         body = item["body"]
 
         # 1. remove junk sentences from body

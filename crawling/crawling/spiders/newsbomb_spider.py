@@ -1,4 +1,5 @@
 from crawling.items import ArticleItem
+from scrapy_redis.spiders import RedisCrawlSpider
 import scrapy
 import json
 import re
@@ -26,8 +27,9 @@ def check_scope(keywords):
         return "ΚΟΣΜΟΣ"
 
 
-class NewsbombSpider(scrapy.Spider):
+class NewsbombSpider(RedisCrawlSpider):
     name = 'newsbomb'
+    redis_key = 'redisSpider'
     allowed_domains = ['newsbomb.gr']
     start_urls = ['https://www.newsbomb.gr/ellada/astynomiko-reportaz', 'https://www.newsbomb.gr/tag/dolofonia',
                   'https://www.newsbomb.gr/tag/lhsteia', 'https://www.newsbomb.gr/tag/kloph',
